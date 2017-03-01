@@ -1,72 +1,89 @@
+#ifndef __SDB_FACTORY
+#define __SDB_FACTORY
 
+
+#ifndef offsetof 
+#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+#endif
+
+#ifndef container_of
+#define container_of(ptr, type, member) ({                      \
+        const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
+        (type *)( (char *)__mptr - offsetof(type,member) );})
+#endif
+
+
+//#define to_i2c_adapter(d) container_of(d, struct i2c_adapter, dev)
 
 typedef struct {
   size_t struct_size;
   
 } libsdb_header;
 
+// abstract bus
+struct abs_bus {
+  int  test;
+  void    ( *write ) ( struct abs_bus *, uint32_t, uint32_t);
+  uint32_t ( *read ) ( struct abs_bus *, uint32_t);
+
+
+  struct list_head module_list;
+};
+
 struct sdbbus{
-  libsdb_header header;
+  struct abs_bus bus;
 
   char * bus_address;
   
-  uint32_t  (*op_read) ( struct sdbbus *, uint32_t) ;
-  void     (*op_write) ( struct sdbbus *, uint32_t, uint32_t);
   void      (*op_open) ( struct sdbbus *);
   void     (*op_close) ( struct sdbbus *);
 };
 
-typedef struct {
-  struct sdbbus header;
 
-  char * bus_address;
-  
-  int fd;
 
-  void * data;
-  off_t     page;
-  uint32_t offset;
-} bus_xdma_t;
+// TODO: opis struktury
+struct sdb_entry {
+};
 
-struct wb_module {
-  libsdb_header header;
-  
-  struct sdbbus * bus;
-  uint32_t   wb_address;
+struct sdb_module {
+  struct sdb_entry entry;
+  uint32_t address;
+  struct abs_bus * bus;
 
+  struct list_head list;
 };
 
 struct gpio_raw {
-  struct wb_module wb;
+  struct sdb_module sdb;
   
 } ;
 
 struct onewire {
-  struct wb_module wb;
+  struct sdb_module sdb;
   
 };
 
-struct wb_i2c {
-  struct wb_module wb;
-  
-};
 
 struct wb_spi {
-  struct wb_module wb;
-  
+  struct sdb_module sdb;
+};
+
+struct chip_i2c {
+  uint8_t i2c_address;
+  struct abs_i2c * bus;
 };
 
 
-typedef struct {
-  struct wb_module wb;
+struct fmc_dio5 {
+  struct sdb_module sdb;
 
   struct gpio_raw * gpio;
   struct onewire  * onewire;
 
-} dio5_t;
+};
 
-typedef struct {
-  struct wb_module wb;
+struct fmc_adc250 {
+  struct sdb_module sdb;
 
   
   struct wb_i2c * vcxo_bus;
@@ -74,21 +91,9 @@ typedef struct {
   struct wb_spi * adc_bus;
   struct wb_spi * mon_bus;
   struct gpio_raw * gpio_bus;
-} adc250_t;
-
-
-struct wb_i2c_device {
-  libsdb_header header;
-  struct wb_i2c * i2c_bus;
-  uint8_t i2c_address; 
 };
 
-struct chip_si57x {
-  struct wb_i2c_device i2c;
-  //
-};
-
-libsdb_header * libsdb_alloc(libsdb_header * handle, size_t size); 
+void * libsdb_alloc(size_t size); 
 
 struct gpio_raw * gpio_raw_init(struct gpio_raw * handle, struct sdbbus * bus, uint32_t wb_address);
 
@@ -96,12 +101,11 @@ struct sdbbus * fmc_sdbbus_alloc(struct sdbbus * handle);
 void       fmc_sdbbus_init(struct sdbbus * handle, char * address);
 void       fmc_sdbbus_destroy(struct sdbbus * handle);
 
-bus_xdma_t * xdma_open_bus(bus_xdma_t * bus, char * address);
+struct fmc_dio5 * fmc_dio5_alloc(struct fmc_dio5 * handle, struct sdbbus * bus);
+void     fmc_dio5_init(struct fmc_dio5 * handle, uint32_t address); 
+void     fmc_dio5_destroy(struct fmc_dio5 * handle); 
 
-dio5_t * fmc_dio5_alloc(dio5_t * handle, struct sdbbus * bus);
-void     fmc_dio5_init(dio5_t * handle, uint32_t address); 
-void     fmc_dio5_destroy(dio5_t * handle); 
+struct fmc_adc250 * fmc_adc250_alloc(struct fmc_adc250 * handle, struct sdbbus * bus);
+void       fmc_adc250_destroy(struct fmc_adc250 * handle); 
 
-adc250_t * fmc_adc250_alloc(adc250_t * handle, struct sdbbus * bus);
-void       fmc_adc250_destroy(adc250_t * handle); 
-
+#endif
