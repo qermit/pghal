@@ -7,7 +7,7 @@
 #include <sys/mman.h>
 
 #include "list.h"
-#include "sdbfactory.h"
+#include "pghal.h"
 #include "sdb_i2c.h"
 
 #define WB_I2C_REG_PERR_LOW  0x00
@@ -34,16 +34,16 @@ inline uint8_t i2c_addr_w(uint8_t addr_7bit)
 
 
 
-void i2c_bus_init(struct abs_i2c *i2c)
+void i2c_bus_init(struct pghal_i2c *i2c)
 {
-  struct abs_bus * bus = & i2c->bus;
+  struct pghal_bus * bus = & i2c->bus;
   //bus->read  = xdma_read32;
   //bus->write = xdma_write32;
   
   INIT_LIST_HEAD(&bus->module_list);
 }
 
-void i2c_chip_register(struct abs_i2c *i2c, uint8_t i2c_address)
+void i2c_chip_register(struct pghal_i2c *i2c, uint8_t i2c_address)
 {
   
 }
@@ -53,13 +53,13 @@ void i2c_chip_register(struct abs_i2c *i2c, uint8_t i2c_address)
 
 // errors -> -1 arbitration lost
 //        -> -2 no ack
-static int wb_i2c_write_read(struct abs_i2c * handle, uint8_t i2c_address, size_t wr_size, char * wr_ptr, size_t rd_size, char * rd_ptr)
+static int wb_i2c_write_read(struct pghal_i2c * handle, uint8_t i2c_address, size_t wr_size, char * wr_ptr, size_t rd_size, char * rd_ptr)
 {
  uint32_t FLAG;
  int i;
 
  struct wb_i2c * wb_i2c = (struct wb_i2c *) (((void *) handle) - offsetof(struct wb_i2c, i2c));
- struct abs_bus * bus = wb_i2c->sdb.bus;
+ struct pghal_bus * bus = wb_i2c->sdb.bus;
   uint32_t wb_address = wb_i2c->sdb.address;
   uint32_t SR = bus->read(bus, wb_address + WB_I2C_REG_SR_CR);
 
@@ -136,16 +136,16 @@ static int wb_i2c_write_read(struct abs_i2c * handle, uint8_t i2c_address, size_
   return 0;
 }
 
-static int wb_i2c_detect(struct abs_i2c * handle, uint8_t i2c_address)
+static int wb_i2c_detect(struct pghal_i2c * handle, uint8_t i2c_address)
 {
 //  printf("wb_i2c_write_read: check: %02x\n", i2c_address);
   return wb_i2c_write_read(handle, i2c_address, 0, NULL, 0, NULL);
 }
 
-struct wb_i2c * wb_i2c_init(struct abs_bus * bus, uint32_t wb_address)
+struct wb_i2c * wb_i2c_init(struct pghal_bus * bus, uint32_t wb_address)
 {
   struct wb_i2c * i2c = NULL;
-  i2c = (struct wb_i2c *) libsdb_alloc((sizeof(struct wb_i2c)));
+  i2c = (struct wb_i2c *) pghal_alloc((sizeof(struct wb_i2c)));
   sdb_module_init(&i2c->sdb, bus, wb_address);
   i2c_bus_init(&i2c->i2c);
 
@@ -161,7 +161,7 @@ struct wb_i2c * wb_i2c_init(struct abs_bus * bus, uint32_t wb_address)
   return i2c;
 }
 
-int abs_i2c_write_read(struct abs_i2c * bus_i2c, uint8_t i2c_address, size_t wr_size, char * wr_ptr, size_t rd_size, char * rd_ptr) {
+int pghal_i2c_write_read(struct pghal_i2c * bus_i2c, uint8_t i2c_address, size_t wr_size, char * wr_ptr, size_t rd_size, char * rd_ptr) {
   return bus_i2c->write_read(bus_i2c, i2c_address, wr_size, wr_ptr, rd_size, rd_ptr);
 }
 

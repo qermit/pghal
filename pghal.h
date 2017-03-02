@@ -18,20 +18,20 @@
 typedef struct {
   size_t struct_size;
   
-} libsdb_header;
+} pghal_header;
 
 // abstract bus
-struct abs_bus {
+struct pghal_bus {
   int  test;
-  void    ( *write ) ( struct abs_bus *, uint32_t, uint32_t);
-  uint32_t ( *read ) ( struct abs_bus *, uint32_t);
+  void    ( *write ) ( struct pghal_bus *, uint32_t, uint32_t);
+  uint32_t ( *read ) ( struct pghal_bus *, uint32_t);
 
 
   struct list_head module_list;
 };
 
 struct sdbbus{
-  struct abs_bus bus;
+  struct pghal_bus bus;
 
   char * bus_address;
   
@@ -48,7 +48,7 @@ struct sdb_entry {
 struct sdb_module {
   struct sdb_entry entry;
   uint32_t address;
-  struct abs_bus * bus;
+  struct pghal_bus * bus;
 
   struct list_head list;
 };
@@ -70,7 +70,7 @@ struct wb_spi {
 
 struct chip_i2c {
   uint8_t i2c_address;
-  struct abs_i2c * bus;
+  struct pghal_i2c * bus;
 };
 
 
@@ -93,7 +93,7 @@ struct fmc_adc250 {
   struct gpio_raw * gpio_bus;
 };
 
-void * libsdb_alloc(size_t size); 
+void * pghal_alloc(size_t size); 
 
 struct gpio_raw * gpio_raw_init(struct gpio_raw * handle, struct sdbbus * bus, uint32_t wb_address);
 

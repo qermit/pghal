@@ -9,7 +9,7 @@
 
 
 #include "list.h"
-#include "sdbfactory.h"
+#include "pghal.h"
 #include "sdb_xdma.h"
 
 #define MAP_SIZE 4096UL
@@ -50,7 +50,7 @@ static void xdma_open(struct sdbbus * bus) {
 }
 */
 
-static uint32_t xdma_read32(struct abs_bus * bus, uint32_t addr) {
+static uint32_t xdma_read32(struct pghal_bus * bus, uint32_t addr) {
   uint32_t read_result = 0 ;
   struct bus_xdma * xdma = (struct bus_xdma *) bus - offsetof(struct bus_xdma, bus);
 
@@ -63,7 +63,7 @@ static uint32_t xdma_read32(struct abs_bus * bus, uint32_t addr) {
   return read_result;
 }
 
-static void xdma_write32(struct abs_bus * bus, uint32_t addr, uint32_t value) {
+static void xdma_write32(struct pghal_bus * bus, uint32_t addr, uint32_t value) {
   struct bus_xdma * xdma = (struct bus_xdma *) bus - offsetof(struct bus_xdma, bus);
   
   xdma_remap(xdma, addr);
@@ -81,9 +81,9 @@ static struct bus_xdma * xdma_alloc()
 {
   struct bus_xdma * xdma = NULL;
 
-  xdma = (struct bus_xdma *) libsdb_alloc(sizeof(struct bus_xdma));
+  xdma = (struct bus_xdma *) pghal_alloc(sizeof(struct bus_xdma));
   
-  struct abs_bus * bus = & xdma->bus;
+  struct pghal_bus * bus = & xdma->bus;
   bus->read  = xdma_read32;
   bus->write = xdma_write32;
   

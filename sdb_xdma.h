@@ -3,7 +3,7 @@
 
 
 struct bus_xdma {
-  struct abs_bus bus;
+  struct pghal_bus bus;
 
   char * bus_address;
   
