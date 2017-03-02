@@ -42,27 +42,10 @@ int main( int argc, char** argv){
  struct wb_i2c * si57x_i2c_bus = wb_i2c_init(bus ,0x00004100);
  //i2c_detect(&si57x_i2c_bus->i2c);
 
- unsigned char data_to_write[] = { 0x07 };
- unsigned char data_to_read[12];
- /*
- si57x_i2c_bus->i2c.write_read(&si57x_i2c_bus->i2c, 0x49, 1, data_to_write, 12, data_to_read);
- int i;
- for(i = 0; i< 12 ; i++){
-   printf("vcxo[%02d]: 0x%02X\n", i+7, data_to_read[i]);
- }
- */
 
  struct chip_si57x * fmc2_si57x = chip_si57x_init(&si57x_i2c_bus->i2c);
  chip_si57x_decode_part_number(fmc2_si57x, "571AJC000337DG");
  chip_si57x_reload_initial(fmc2_si57x);
-
- 
- { int i;
-  for (i = 0; i<6 ; i++) { 
-    printf("DATA[%d] = 0x%02X vs 0x%02X\n", i+7, fmc2_si57x->reg_init.regs_raw[i], fmc2_si57x->reg_current.regs_raw[i]);
-  }
- }
-
 
  double fnew = chip_si57x_get_fout0(fmc2_si57x);
  fnew = 125.0;

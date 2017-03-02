@@ -15,8 +15,7 @@ struct pghal_i2c {
 };
 
 int pghal_i2c_write_read(struct pghal_i2c * bus_i2c, uint8_t i2c_address, size_t wr_size, char * wr_ptr, size_t rd_size, char * rd_ptr);
-
-
+void pghal_i2c_detect(struct pghal_i2c * i2c_bus);
 
 struct wb_i2c {
   struct sdb_module sdb;
