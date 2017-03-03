@@ -20,17 +20,17 @@
 	(type *)( (char *)__mptr - offsetof(type,member) );})
 
 
-struct list_head {
-	struct list_head *next, *prev;
+struct pghal_list {
+	struct pghal_list *next, *prev;
 };
 
 
 #define LIST_HEAD_INIT(name) { &(name), &(name) }
 
 #define LIST_HEAD(name) \
-	struct list_head name = LIST_HEAD_INIT(name)
+	struct pghal_list name = LIST_HEAD_INIT(name)
 
-static inline void INIT_LIST_HEAD(struct list_head * list)
+static inline void INIT_LIST_HEAD(struct pghal_list * list)
 {
   list->prev = list;
   list->next = list;
@@ -38,7 +38,7 @@ static inline void INIT_LIST_HEAD(struct list_head * list)
 
 /**
  * list_entry - get the struct for this entry
- * @ptr:	the &struct list_head pointer.
+ * @ptr:	the &struct pghal_list pointer.
  * @type:	the type of the struct this is embedded in.
  * @member:	the name of the list_struct within the struct.
  */
@@ -73,7 +73,7 @@ static inline void INIT_LIST_HEAD(struct list_head * list)
  * list_empty - tests whether a list is empty
  * @head: the list to test.
  */
-static inline int list_empty(const struct list_head *head)
+static inline int list_empty(const struct pghal_list *head)
 {
 	return head->next == head;
 }
@@ -84,9 +84,9 @@ static inline int list_empty(const struct list_head *head)
  * This is only for internal list manipulation where we know
  * the prev/next entries already!
  */
-static inline void __list_add(struct list_head *_new,
-			      struct list_head *prev,
-			      struct list_head *next)
+static inline void __list_add(struct pghal_list *_new,
+			      struct pghal_list *prev,
+			      struct pghal_list *next)
 {
 	next->prev = _new;
 	_new->next = next;
@@ -102,7 +102,7 @@ static inline void __list_add(struct list_head *_new,
  * Insert a new entry before the specified head.
  * This is useful for implementing queues.
  */
-static inline void list_add_tail(struct list_head *_new, struct list_head *head)
+static inline void list_add_tail(struct pghal_list *_new, struct pghal_list *head)
 {
 	__list_add(_new, head->prev, head);
 }
@@ -114,7 +114,7 @@ static inline void list_add_tail(struct list_head *_new, struct list_head *head)
  * This is only for internal list manipulation where we know
  * the prev/next entries already!
  */
-static inline void __list_del(struct list_head *prev, struct list_head *next)
+static inline void __list_del(struct pghal_list *prev, struct pghal_list *next)
 {
 	next->prev = prev;
 	prev->next = next;
@@ -128,10 +128,10 @@ static inline void __list_del(struct list_head *prev, struct list_head *next)
  * Note: list_empty() on entry does not return true after this, the entry is
  * in an undefined state.
  */
-static inline void list_del(struct list_head *entry)
+static inline void list_del(struct pghal_list *entry)
 {
 	__list_del(entry->prev, entry->next);
-	entry->next = (struct list_head*)LIST_POISON1;
-	entry->prev = (struct list_head*)LIST_POISON2;
+	entry->next = (struct pghal_list*)LIST_POISON1;
+	entry->prev = (struct pghal_list*)LIST_POISON2;
 }
 #endif

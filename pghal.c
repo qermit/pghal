@@ -27,23 +27,65 @@
 #include "list.h"
 #include "pghal.h"
 #include "sdb_xdma.h"
-#include "sdb_i2c.h"
+//#include "sdb_i2c.h"
 
 // CHIPS include
-#include "chip/chip_si57x.h"
+//#include "chip/chip_si57x.h"
 
 void * pghal_alloc(size_t size) 
 {
    void * header = NULL;
    header = malloc(size);
-   printf ("pghal_alloc: %p\n", header);
    memset(header, 0, size);
    return header;
 }
 
+void pghal_node_driver_register( struct pghal_list *list, struct pghal_node_driver * driver)
+{
+  list_add_tail(&driver->list, list);
+}
 
-void pghal_bus_register_new_module(struct pghal_bus * bus, struct list_head * module) {
+void pghal_bus_driver_register( struct pghal_list *list, struct pghal_bus_driver * driver)
+{
+  list_add_tail(&driver->list, list);
+}
+
+
+void pghal_bus_register_new_module(struct pghal_bus * bus, struct pghal_list * module) {
   list_add_tail(module, &bus->module_list);
+}
+
+
+size_t pghal_bus_write(struct pghal_bus * bus, struct pghal_address * addr, size_t wr_len, void *wr_ptr )
+{
+  // @TODO: check if driver valid
+  if (bus == NULL) return 0;
+  struct pghal_bus_driver * driver = bus->driver;
+  // no driver ???
+  if (driver == NULL){
+    return 0;
+  }
+  if (driver->op.write == NULL){
+    return 0;
+  }
+  return  driver->op.write(bus, addr, wr_len, wr_ptr);
+}
+
+uint32_t pghal_bus_read(struct pghal_bus *bus, struct pghal_address * addr, size_t rd_len, void *rd_ptr)
+{
+  if (bus == NULL) return 0;
+  struct pghal_bus_driver * driver = bus->driver;
+  // no driver ???
+  if (driver == NULL){
+    return 0;
+  }
+  if (driver->op.read == NULL){
+    printf("no read handler\n");
+    return 0;
+  }
+  
+  return  driver->op.read(bus, addr, rd_len, rd_ptr);
+//  return 0;
 }
 
 /*
@@ -77,14 +119,6 @@ void     fmc_dio5_destroy(struct fmc_dio5 * handle)
 {
 }
 */
-
-void sdb_module_init(struct sdb_module * handle, struct pghal_bus * bus, uint32_t wb_address)
-{
-  handle->bus = bus; // @TODO: inc bus usage count
-  handle->address = wb_address;
-
-  pghal_bus_register_new_module(bus, &handle->list);
-}
 
 /*
 struct gpio_raw * gpio_raw_init(struct gpio_raw * handle, struct sdbbus * bus, uint32_t wb_address)
@@ -158,36 +192,4 @@ void fmc_adc250_enable_vcxo(adc250_t * handle, int enable) {
 
 */
 
-
-void i2c_detect(struct pghal_i2c * i2c_bus)
-{
-
- int res;
- uint8_t chip_id = 0x49;
-
-
-printf("Probing available I2C devices using bus  ...");
-printf("\n     00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F");
-printf("\n====================================================");
-for(chip_id = 0x0; chip_id < 128 ; chip_id++) {
-
-if ( (chip_id % 16) == 0 ) {
-        printf("\n%02X  ", chip_id/16);
- }
-  if ( chip_id <= 7 || chip_id > 120 ) {
-    printf("   ");
-    continue;
-  }
-
-  res = i2c_bus->chip_present(i2c_bus, chip_id);
-
-  if ( res == 0 ) {
-    printf(" %02X", chip_id);
-  } else {
-    printf(" --",res);
-  }
- }
- printf("\n");
-
-}
 

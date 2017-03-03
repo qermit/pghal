@@ -145,14 +145,6 @@ int chip_si57x_find_valid_combo(struct chip_si57x * chip, double new_freq, uint8
   chip->reg_new.rfreq = (chip->reg_new.fout * n1 * hsdiv) / chip->fxtal;
   chip_si57x_val_to_regs(&chip->reg_new); 
 
-  printf("result of combo:\n fout: %lf MHz\n hsdiv: %d\n n: %d\n rfreq: %lf Mhz\n", chip->reg_new.fout, chip->reg_new.hsdiv, chip->reg_new.n1, chip->reg_new.rfreq);
- { int i;
-  for (i = 0; i<6 ; i++) { 
-    printf("DATA[%d] = 0x%02X vs 0x%02X\n", i+7, chip->reg_init.regs_raw[i], chip->reg_new.regs_raw[i]);
-  }
- }
- 
-
 }
 
 
@@ -269,16 +261,11 @@ void chip_si57x_reload_initial(struct chip_si57x *chip)
   memcpy(&chip->reg_current, &chip->reg_init, sizeof(typeof(chip->reg_init))); 
 
 
-
-  printf("current fxtal: %lf\n", chip->fxtal);
 }
 
 
 void chip_si57x_read_fxtal(struct chip_si57x *chip)
 {
-  struct pghal_i2c * i2c_bus =  chip->i2c;
-  int ret = i2c_bus->chip_present(i2c_bus, chip->i2c_address);
- printf("fmc2_si57x: present %d\n", ret);
 }
 
 

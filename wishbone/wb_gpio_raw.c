@@ -1,0 +1,58 @@
+
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <stdio.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/mman.h>
+
+#include "list.h"
+#include "pghal.h"
+
+#include "sdb_bus.h"
+#include "wb_gpio_raw.h"
+
+#define WB_GPIO_RAW_CODR 0x00
+#define WB_GPIO_RAW_SODR 0x04
+#define WB_GPIO_RAW_DDR  0x08
+#define WB_GPIO_RAW_PSR  0x0C
+
+#define WB_GPIO_RAW_TERM 0x10
+#define WB_GPIO_RAW_ALTF 0x14
+
+struct wb_gpio_raw * wb_gpio_raw_create_direct(struct pghal_bus * bus, uint32_t bus_address)
+{
+  struct wb_gpio_raw * gpio = NULL;
+  gpio = (struct wb_gpio_raw *) pghal_alloc((sizeof(struct wb_gpio_raw)));
+
+  gpio->sdb.bus = bus;
+  gpio->sdb.address.sdb_address =  bus_address;
+  gpio->tmp_address.sdb_address =  bus_address;
+
+
+  
+//  sdb_module_init(&gpio->sdb, bus, bus_address);
+
+  return gpio;
+}
+
+void     wb_gpio_raw_set_port_direction(struct wb_gpio_raw * gpio, uint32_t dir_out){
+  //uint32_t data[1] = { dir_out };
+  
+// pghal_bus_write(gpio->sdb.bus, gpio->sdb.address + WB_GPIO_RAW_DDR, dir_out);
+}
+
+void wb_gpio_raw_set_port_value(struct wb_gpio_raw * gpio, uint32_t value, uint32_t mask)
+{
+  uint32_t data_w[2] = { value & mask, (~value) & mask };  
+  // TODO: memory leak :)
+  gpio->tmp_address.sdb_address = gpio->sdb.address.sdb_address + WB_GPIO_RAW_SODR; 
+  pghal_bus_write(gpio->sdb.bus, &gpio->tmp_address.address , 1*sizeof(uint32_t), data_w);
+  gpio->tmp_address.sdb_address = gpio->sdb.address.sdb_address + WB_GPIO_RAW_CODR; 
+  pghal_bus_write(gpio->sdb.bus, &gpio->tmp_address.address, 1*sizeof(uint32_t), data_w+1);
+//   pghal_bus_write(gpio->sdb.bus, gpio->sdb.address + WB_GPIO_RAW_SODR, value & mask);
+//   pghal_bus_write(gpio->sdb.bus, gpio->sdb.address + WB_GPIO_RAW_CODR, (~value) & mask);
+ 
+}
+

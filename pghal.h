@@ -14,21 +14,92 @@
 
 
 //#define to_i2c_adapter(d) container_of(d, struct i2c_adapter, dev)
+//
+//
+//Forward declarations
+struct pghal_bus_op;
+struct pghal_address_driver;
+struct pghal_address;
+struct pghal_bus_driver;
+struct pghal_bus;
+struct pghal_node_driver;
+struct pghal_node;
+
+struct pghal_bus {
+  struct pghal_list list; // all buses
+  struct pghal_bus_driver * driver;
+
+  struct pghal_list module_list;
+};
+
+
+struct pghal_address_driver {
+  void (*snprintf)(char * ptr, size_t size, struct pghal_address * address);
+  void (*sscanf)(char * ptr, size_t size, struct pghal_address * address);
+// @todo -> zamienic na pghal_list;
+  struct pghal_list addr_list; // list to all addresses created
+};
+
+struct pghal_address {
+  struct pghal_list list; // list to all addresses created
+  struct pghal_bus_driver * bus_driver; // pointer to driver
+};
+  
+
+struct pghal_bus_op {
+  void   (*start)  (struct pghal_bus *, struct pghal_address *);
+  void   (*stop)   (struct pghal_bus *);
+  void   (*write_read) (struct pghal_bus *, size_t length, size_t wr_offset, size_t wr_len, void * wr_ptr, size_t rd_offset, size_t rd_len, void * rd_ptr);
+  size_t (*write)  (struct pghal_bus * bus, struct pghal_address * addr, size_t wr_len, void *wr_ptr ); // returns number of written bytes
+  size_t (*read)   (struct pghal_bus * bus, struct pghal_address * addr, size_t rd_len, void *rd_ptr ); // return number of readed bytes
+  void   (*lock)   (struct pghal_bus *);
+  void   (*unlock) (struct pghal_bus *);
+};
+
+// abstract bus
+
+// structure common for all nodes
+// todo: add operations just like probe
+struct pghal_node_driver {
+  struct pghal_list node_list; // list all nodes
+  struct pghal_list list; // list of all drivers
+  int (*probe) (int id);
+};
+
+struct pghal_node {
+  struct pghal_list list; // all nodes on the bus
+  struct pghal_node_driver * driver; // pointer to node driver;
+  struct pghal_bus * bus; //pointer to current bus
+  struct pghal_address * address;// pointer to address
+  
+};
+
+struct pghal_bus_driver {
+  struct pghal_address_driver address;
+  struct pghal_bus_op op;
+  struct pghal_list list ; // all bus driver list
+  struct pghal_list pghal_node;
+};
+
+struct pghal_transaction {
+  struct pghal_bus * bus ; //pointer to bus
+  struct pghal_address * address; // pointer to address abstraction
+};
+
+
+void pghal_node_driver_register( struct pghal_list *list, struct pghal_node_driver * driver);
+
+void pghal_bus_driver_register( struct pghal_list *list, struct pghal_bus_driver * driver);
+
 
 typedef struct {
   size_t struct_size;
   
 } pghal_header;
 
-// abstract bus
-struct pghal_bus {
-  int  test;
-  void    ( *write ) ( struct pghal_bus *, uint32_t, uint32_t);
-  uint32_t ( *read ) ( struct pghal_bus *, uint32_t);
 
-
-  struct list_head module_list;
-};
+size_t pghal_bus_write(struct pghal_bus * bus, struct pghal_address * addr, size_t wr_len, void *wr_ptr );
+size_t pghal_bus_write(struct pghal_bus * bus, struct pghal_address * addr, size_t rd_len, void *rd_ptr );
 
 struct sdbbus{
   struct pghal_bus bus;
@@ -41,32 +112,11 @@ struct sdbbus{
 
 
 
-// TODO: opis struktury
-struct sdb_entry {
-};
-
-struct sdb_module {
-  struct sdb_entry entry;
-  uint32_t address;
-  struct pghal_bus * bus;
-
-  struct list_head list;
-};
-
-struct gpio_raw {
-  struct sdb_module sdb;
-  
-} ;
-
-struct onewire {
+/*struct onewire {
   struct sdb_module sdb;
   
 };
 
-
-struct wb_spi {
-  struct sdb_module sdb;
-};
 
 struct chip_i2c {
   uint8_t i2c_address;
@@ -92,11 +142,12 @@ struct fmc_adc250 {
   struct wb_spi * mon_bus;
   struct gpio_raw * gpio_bus;
 };
+*/
+
 
 void * pghal_alloc(size_t size); 
 
-struct gpio_raw * gpio_raw_init(struct gpio_raw * handle, struct sdbbus * bus, uint32_t wb_address);
-
+/*
 struct sdbbus * fmc_sdbbus_alloc(struct sdbbus * handle);
 void       fmc_sdbbus_init(struct sdbbus * handle, char * address);
 void       fmc_sdbbus_destroy(struct sdbbus * handle);
@@ -107,5 +158,5 @@ void     fmc_dio5_destroy(struct fmc_dio5 * handle);
 
 struct fmc_adc250 * fmc_adc250_alloc(struct fmc_adc250 * handle, struct sdbbus * bus);
 void       fmc_adc250_destroy(struct fmc_adc250 * handle); 
-
+*/
 #endif
