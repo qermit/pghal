@@ -23,6 +23,7 @@
 #include "sdb_xdma_priv.h"
 #include "pghal_i2c.h"
 
+#include "wishbone/wb_i2c.h"
 #include "wishbone/wb_gpio_raw.h"
 
 // CHIPS include
