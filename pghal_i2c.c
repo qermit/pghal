@@ -1,15 +1,6 @@
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/mman.h>
-
-#include "list.h"
-#include "pghal.h"
+#include "pghal_inc.h"
 #include "sdb_bus.h"
-#include "sdb_i2c.h"
+#include "pghal_i2c.h"
 
 #define WB_I2C_REG_PERR_LOW  0x00
 #define WB_I2C_REG_PERR_HIGH 0x04
@@ -56,33 +47,18 @@ void i2c_chip_register(struct pghal_i2c *i2c, uint8_t i2c_address)
 //        -> -2 no ack
 static int wb_i2c_write_read(struct pghal_i2c * handle, uint8_t i2c_address, size_t wr_size, uint8_t * wr_ptr, size_t rd_size, uint8_t * rd_ptr)
 {
- uint32_t FLAG;
- int i;
+  uint32_t FLAG;
+  int i;
 
- struct wb_i2c * wb_i2c = (struct wb_i2c *) (((void *) handle) - offsetof(struct wb_i2c, i2c));
- struct pghal_bus * bus = wb_i2c->sdb.bus;
+  struct wb_i2c * wb_i2c = (struct wb_i2c *) (((void *) handle) - offsetof(struct wb_i2c, i2c));
+  struct pghal_bus * bus = wb_i2c->sdb.bus;
   uint32_t wb_address = wb_i2c->sdb.address.sdb_address;
   struct sdb_node_address * tmp_address = &wb_i2c->tmp_address;
   uint32_t data_w;
   uint32_t SR;
+
   tmp_address->sdb_address = wb_address + WB_I2C_REG_SR_CR ; pghal_bus_read(bus, &tmp_address->address , 1*sizeof(uint32_t), &SR);
 
- // check if just detect i2c
- /*
-  if (wr_size == 0 && rd_size == 0 ) {
-    bus->write(bus, wb_address + WB_I2C_REG_RXR_TXR, i2c_addr_w(i2c_address));
-    bus->write(bus, wb_address + WB_I2C_REG_SR_CR, 0b10010000);
-    SR = bus->read(bus, wb_address + WB_I2C_REG_SR_CR); 
-    while (SR & 0x00000002) {
-      SR = bus->read(bus, wb_address + WB_I2C_REG_SR_CR); 
-      if (SR & 0x20 ) return -1;
-    }
-    bus->write(bus, wb_address + WB_I2C_REG_SR_CR,  0b01000000);
-    if (SR & 0x80) return -2;
-    return 0;
-  }
-  */
- 
   if ((wr_size > 0) || (wr_size == 0 && rd_size == 0)) {
     tmp_address->sdb_address = wb_address + WB_I2C_REG_RXR_TXR ; data_w = i2c_addr_w(i2c_address); pghal_bus_write(bus, &tmp_address->address , 1*sizeof(uint32_t), &data_w);
     tmp_address->sdb_address = wb_address + WB_I2C_REG_SR_CR   ; data_w = 0b10010000             ; pghal_bus_write(bus, &tmp_address->address , 1*sizeof(uint32_t), &data_w);
@@ -95,7 +71,6 @@ static int wb_i2c_write_read(struct pghal_i2c * handle, uint8_t i2c_address, siz
 
     uint8_t * wr_ptr8 = wr_ptr; // todo <- conversion from void *
     for(i=0; i<wr_size; i++) {
-      //print("Write to buffer 0x{:0>2X}".format(i2c_op["write_buff"][i]))
       tmp_address->sdb_address = wb_address + WB_I2C_REG_RXR_TXR ; data_w = wr_ptr8[i]  ; pghal_bus_write(bus, &tmp_address->address , 1*sizeof(uint32_t), &data_w);
       tmp_address->sdb_address = wb_address + WB_I2C_REG_SR_CR   ; data_w = 0b00010000  ; pghal_bus_write(bus, &tmp_address->address , 1*sizeof(uint32_t), &data_w);
 

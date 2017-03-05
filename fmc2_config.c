@@ -16,21 +16,12 @@
  * Copyleft (ↄ) 2017 Piotr Miedzik
  *****************************************************************************/
 
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <unistd.h>
+#include "pghal_inc.h"
 
-#include "list.h"
-#include "pghal.h"
 #include "sdb_bus.h"
 #include "sdb_xdma.h"
 #include "sdb_xdma_priv.h"
-#include "sdb_i2c.h"
+#include "pghal_i2c.h"
 
 #include "wishbone/wb_gpio_raw.h"
 

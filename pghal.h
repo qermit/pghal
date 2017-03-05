@@ -25,6 +25,23 @@ struct pghal_bus;
 struct pghal_node_driver;
 struct pghal_node;
 
+struct pghal_header{
+  ptrdiff_t offset; // if <0 hoilds offset to "parent" structure
+  size_t struct_size;
+};
+
+struct pghal_op_rw {
+  size_t granularity; // atomic size 
+
+  size_t wr_offset;
+  size_t rd_offset;
+  void * wr_ptr;
+  void * rd_ptr;
+  void * rd_ptr_end;
+  void * wr_ptr_end;
+};
+
+
 struct pghal_bus {
   struct pghal_list list; // all buses
   struct pghal_bus_driver * driver;
@@ -92,10 +109,6 @@ void pghal_node_driver_register( struct pghal_list *list, struct pghal_node_driv
 void pghal_bus_driver_register( struct pghal_list *list, struct pghal_bus_driver * driver);
 
 
-typedef struct {
-  size_t struct_size;
-  
-} pghal_header;
 
 
 size_t pghal_bus_write(struct pghal_bus * bus, struct pghal_address * addr, size_t wr_len, void *wr_ptr );

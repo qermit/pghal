@@ -1,13 +1,6 @@
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/mman.h>
 
-#include "list.h"
-#include "pghal.h"
+#include "pghal_inc.h"
+
 #include "sdb_bus.h"
 
 

@@ -1,11 +1,8 @@
 #ifndef __SDB_I2C_H___
 #define __SDB_I2C_H__
 
-
-
-
 struct pghal_i2c {
-  struct pghal_bus bus;
+  struct pghal_bus bus; // holds info
   
   int (*write_read)   (struct pghal_i2c *, uint8_t, size_t, uint8_t *, size_t, uint8_t *);
   int (*write)        (struct pghal_i2c *, uint8_t, size_t, char *);
