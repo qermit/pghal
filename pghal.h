@@ -31,6 +31,8 @@ struct pghal_header{
 };
 
 struct pghal_op_rw {
+  uint8_t start;
+  uint8_t stop;
   size_t granularity; // atomic size 
 
   size_t wr_offset;
@@ -159,6 +161,7 @@ struct fmc_adc250 {
 
 
 void * pghal_alloc(size_t size); 
+void pghal_dump_regs(uint8_t * ptr, size_t len);
 
 /*
 struct sdbbus * fmc_sdbbus_alloc(struct sdbbus * handle);

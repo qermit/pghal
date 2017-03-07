@@ -32,6 +32,18 @@ void * pghal_alloc(size_t size)
    return header;
 }
 
+void pghal_dump_regs(uint8_t *ptr, size_t len)
+{
+  int tmp_i;
+  printf("      0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F");
+  for (tmp_i = 0; tmp_i < len; tmp_i += 1) {
+   if ( tmp_i % 16 == 0) printf("\n%2X0:", tmp_i / 16);
+   printf (" %02x", ptr[tmp_i]);
+  }
+
+  printf ("\n");
+}
+
 void pghal_node_driver_register( struct pghal_list *list, struct pghal_node_driver * driver)
 {
   list_add_tail(&driver->list, list);

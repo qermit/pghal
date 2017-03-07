@@ -6,3 +6,5 @@ struct wb_spi {
 };
 
 struct wb_spi * wb_spi_init(struct pghal_bus * bus, uint32_t bus_address);
+int wb_spi_write_read_direct(struct wb_spi * wb_spi, uint8_t ss_id, struct pghal_op_rw * op);
+

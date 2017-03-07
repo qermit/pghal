@@ -17,8 +17,9 @@ uint32_t wb_gpio_raw_get_port_direction(struct * wb_gpio_raw);
 
 void     wb_gpio_raw_set_port_termination(struct * wb_gpio_raw, uint32_t term_en);
 uint32_t wb_gpio_raw_get_port_termination(struct * wb_gpio_raw);
-
-void     wb_gpio_raw_set_port_altf(struct * wb_gpio_raw, uint32_t altf);
+*/
+void     wb_gpio_raw_set_port_altf(struct wb_gpio_raw * gpio, uint32_t altf);
+/*
 uint32_t wb_gpio_raw_get_port_altf(struct * wb_gpio_raw);
 
 uint32_t wb_gpio_raw_get_port_input(struct * wb_gpio_raw); // returns values from input

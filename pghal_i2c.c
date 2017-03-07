@@ -55,7 +55,7 @@ if ( (chip_id % 16) == 0 ) {
     continue;
   }
 
-  res = i2c_bus->chip_present(i2c_bus, chip_id);
+  res = pghal_i2c_chip_present(i2c_bus, chip_id);
 
   if ( res == 0 ) {
     printf(" %02X", chip_id);

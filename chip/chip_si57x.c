@@ -1,18 +1,8 @@
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/mman.h>
+#include "pghal_inc.h"
 
 #include <math.h>
 
-#include "list.h"
-
-
-#include "pghal.h"
-#include "sdb_i2c.h"
+#include "pghal_i2c.h"
 #include "chip_si57x.h"
 
 
@@ -38,9 +28,19 @@ struct chip_si57x * chip_si57x_init(struct pghal_i2c * i2c_bus)
 
 int  chip_si57x_decode_part_number(struct chip_si57x *chip, char*part_number)
 {
-  if (strncmp("571AJC000337DG", part_number, 12) == 0 ){
+  strncpy(chip->part_number, part_number, 12);
+  chip->part_number[12] = 0;
+
+  if (strncmp("571AJC000337DG", part_number, 12) == 0 ) {
     chip_si57x_set_address(chip, 0x49);
     chip_si57x_set_fout0(chip, 155.52);
+    chip->config_regs_offset = 7;
+    chip->freq_max = 280.0;
+    chip->freq_min = 10.0;
+    return 0;
+  } else if (strncmp("TESTTESTTEST01", part_number, 12) == 0 ) {
+    chip_si57x_set_address(chip, 0x49);
+    chip_si57x_set_fout0(chip, 156.25);
     chip->config_regs_offset = 7;
     chip->freq_max = 280.0;
     chip->freq_min = 10.0;
@@ -104,8 +104,9 @@ void chip_si57x_regs_to_val(struct chip_si57x_regs *reg) {
 int chip_si57x_find_valid_combo(struct chip_si57x * chip, double new_freq, uint8_t use_smooth) 
 {
   uint8_t hsdiv;
-  uint16_t divider_max = floor(chip->fdco_max / chip->reg_init.fout);
-  uint16_t curr_div    = ceil(chip->fdco_min / chip->reg_init.fout);
+  uint16_t divider_max = floor(chip->fdco_max / new_freq);
+  uint16_t curr_div    = ceil(chip->fdco_min / new_freq);
+
   uint8_t valid_combo = 0;
   uint8_t i;
 
@@ -133,11 +134,10 @@ int chip_si57x_find_valid_combo(struct chip_si57x * chip, double new_freq, uint8
        } 
        if(valid_combo == 1) break;
     }
-    if (valid_combo = 1) break;
+    if (valid_combo == 1) break;
 
     curr_div++;
   }
-
   chip->reg_new.fout = new_freq;
   chip->reg_new.hsdiv = hsdiv;
   chip->reg_new.n1 = n1;
@@ -208,6 +208,15 @@ void chip_si57x_freeze_m(struct chip_si57x * chip, uint8_t freeze)
    pghal_i2c_write_read(chip->i2c, chip->i2c_address, 2, data_w, 0, NULL);
 }
 
+void chip_si57x_registers_download(struct chip_si57x * chip)
+{
+  uint8_t data_w[7];
+  data_w[0] = chip->config_regs_offset;
+  pghal_i2c_write_read(chip->i2c, chip->i2c_address, 1, data_w, 6, data_w);
+
+  memcpy(chip->reg_current.regs_raw, data_w, 6);
+}
+
 
 void chip_si57x_send_regs(struct chip_si57x * chip, struct chip_si57x_regs * reg, uint8_t method)
 {
@@ -249,19 +258,29 @@ void chip_si57x_reload_initial(struct chip_si57x *chip)
   struct pghal_i2c * i2c_bus =  chip->i2c;
   chip_si57x_do_recall(chip);
   
-  uint8_t * data_w = chip->reg_init.regs_raw;
-  data_w[0] = chip->config_regs_offset;
-  
-  pghal_i2c_write_read(i2c_bus, chip->i2c_address, 1, data_w, 6, data_w);
-  int i;
-  chip_si57x_regs_to_val(&chip->reg_init);
+  if (strncmp("TESTTESTTEST01", chip->part_number,12) == 0 ) {
+    printf("loading test values\n");
+    chip->reg_init.regs_raw[0] = 0x01;
+    chip->reg_init.regs_raw[1] = 0xC2;
+    chip->reg_init.regs_raw[2] = 0xBC;
+    chip->reg_init.regs_raw[3] = 0x01;
+    chip->reg_init.regs_raw[4] = 0x1E;
+    chip->reg_init.regs_raw[5] = 0xB8;
+  } else {
+    uint8_t * data_w = chip->reg_init.regs_raw;
+    data_w[0] = chip->config_regs_offset;
+    pghal_i2c_write_read(i2c_bus, chip->i2c_address, 1, data_w, 6, data_w);
+  }
 
+
+  chip_si57x_regs_to_val(&chip->reg_init);
   chip->fxtal = (chip->reg_init.fout * chip->reg_init.hsdiv * chip->reg_init.n1) / (chip->reg_init.rfreq);
 
   memcpy(&chip->reg_current, &chip->reg_init, sizeof(typeof(chip->reg_init))); 
 
 
 }
+
 
 
 void chip_si57x_read_fxtal(struct chip_si57x *chip)

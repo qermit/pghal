@@ -59,6 +59,8 @@ struct chip_si57x {
 struct chip_si57x * chip_si57x_init(struct pghal_i2c * i2c_bus);
 void chip_si57x_regs_to_val(struct chip_si57x_regs *reg);
 void chip_si57x_val_to_regs(struct chip_si57x_regs *reg);
+void chip_si57x_registers_download(struct chip_si57x * chip);
+
 
 int chip_si57x_find_valid_combo(struct chip_si57x * chip, double new_freq, uint8_t use_smooth);
 
