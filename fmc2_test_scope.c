@@ -50,20 +50,23 @@ int main( int argc, char** argv){
   struct xdma_node * xdma = NULL;
   xdma = xdma_open_bus("/dev/xdma/card0/user");
 
-  struct xwb_scope * osci = xwb_scope_create_direct(&xdma->bus, OFFSET_AMC_XWB_SCOPE);
+  struct xwb_scope * osci = xwb_scope_create_direct(&xdma->bus, OFFSET_AMC_XWB_SCOPE1);
 
   xwb_scope_single_shot(osci);
-  sleep(1);
-   
-  
-  int fd = open("/dev/xdma/card0/bypass", O_RDWR | O_SYNC);
-  struct xwb_scope_data * buff;
-  buff = mmap(0, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-  int i;
-  for ( i=0; i< MAP_SIZE / 16; i++) {
-   //printf("data[%3$d]: %1$04X, %2$04X\n", buff[i].ch0, buff[i].ch2, i);
-   printf("data[%3$d]: %1$u, %2$u\n", buff[i].ch0, buff[i].ch2, i);
+  while ( xwb_scope_get_csr(osci) & (XWB_SCOPE_CSR0_STATE_ARMED | XWB_SCOPE_CSR0_STATE_TRIGGERED)) {
+    usleep(1);
+    printf("Wait .. \n");
   }
-  printf("%d  \n", sizeof(buff));
+  
+  
+//  int fd = open("/dev/xdma/card0/bypass", O_RDWR | O_SYNC);
+//  struct xwb_scope_data * buff;
+//  buff = mmap(0, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+//  int i;
+//  for ( i=0; i< MAP_SIZE / 16; i++) {
+//   //printf("data[%3$d]: %1$04X, %2$04X\n", buff[i].ch0, buff[i].ch2, i);
+//   printf("data[%3$d]: %1$u, %2$u\n", buff[i].ch0, buff[i].ch2, i);
+//  }
+//  printf("%d  \n", sizeof(buff));
   return 0;
 }

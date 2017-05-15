@@ -87,6 +87,7 @@ static size_t xdma_op_write(struct pghal_bus * bus, struct pghal_address * addr,
   uint32_t * end_ptr = wr_ptr + wr_len;
   while(wr_ptr32 < end_ptr){
     xdma_write_direct(xdma, address, *wr_ptr32);
+    address += sizeof(uint32_t);
     wr_ptr32++;
   }
   return wr_len;
@@ -116,7 +117,7 @@ static size_t xdma_op_read(struct pghal_bus * bus, struct pghal_address * addr, 
   uint32_t * end_ptr = rd_ptr + rd_len;
   while(rd_ptr32 < end_ptr){
     *rd_ptr32 = xdma_read_direct(xdma, address);
-//    xdma_write_direct(xdma, address, *wr_ptr32);
+    address += sizeof(uint32_t);
     rd_ptr32++;
   }
   return rd_len;

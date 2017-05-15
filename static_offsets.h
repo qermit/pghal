@@ -2,10 +2,12 @@
 #define __STATIC_OFFSETS__
 
 #define OFFSET_AMC               0x00000000
-#define OFFSET_AMC_XWB_SCOPE     0x00000200
-#define OFFSET_AMC_DNA           0x00000220
-#define OFFSET_AMC_GPIO          0x00000300
+#define OFFSET_AMC_DNA           0x00000200
+#define OFFSET_AMC_XWB_SCOPE1    0x00000280
+#define OFFSET_AMC_XWB_SCOPE2    0x00000300
+#define OFFSET_AMC_GPIO          0x00000400
 #define OFFSET_AMC_XDMA          0x00001000
+
 
 #define OFFSET_FMC1              0x00002000
 #define OFFSET_DIO5_SDB          0x00000000
