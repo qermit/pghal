@@ -10,9 +10,17 @@
 #define XWB_SCOPE_CSR0_STATE_ARMED     0x20
 #define XWB_SCOPE_CSR0_STATE_TRIGGERED 0x40
 
+struct __attribute__((__packed__)) xwb_scope_csr {
+  uint32_t csr0;
+  uint32_t ptr;
+  uint32_t start_addr;
+  uint32_t end_addr;
+};
+
 struct xwb_scope {
   struct sdb_module sdb;
 
+  struct xwb_scope_csr reg;
 };
 
 
@@ -24,6 +32,9 @@ void xwb_scope_single_shot(struct xwb_scope * scope);
 void xwb_scope_single_reset(struct xwb_scope * scope);
 
 uint32_t xwb_scope_get_csr(struct xwb_scope * scope);
+
+void xwb_scope_set_address_range(struct xwb_scope * scope, uint32_t start, uint32_t size);
+void xwb_scope_registers_download(struct xwb_scope * scope);
 
 
 

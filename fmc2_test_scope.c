@@ -51,13 +51,17 @@ int main( int argc, char** argv){
   xdma = xdma_open_bus("/dev/xdma/card0/user");
 
   struct xwb_scope * osci = xwb_scope_create_direct(&xdma->bus, OFFSET_AMC_XWB_SCOPE1);
+  
 
+  xwb_scope_set_address_range(osci, 0x4000, 0x1000);
+  printf("Start: %08X, end: %08X\n", osci->reg.start_addr, osci->reg.end_addr);
+  return 0;
   xwb_scope_single_shot(osci);
   while ( xwb_scope_get_csr(osci) & (XWB_SCOPE_CSR0_STATE_ARMED | XWB_SCOPE_CSR0_STATE_TRIGGERED)) {
     usleep(1);
     printf("Wait .. \n");
   }
-  
+  xwb_scope_registers_download(osci);  
   
 //  int fd = open("/dev/xdma/card0/bypass", O_RDWR | O_SYNC);
 //  struct xwb_scope_data * buff;

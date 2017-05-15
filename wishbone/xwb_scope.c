@@ -45,14 +45,26 @@ uint32_t xwb_scope_get_csr(struct xwb_scope * scope){
   return data_r[0];
 }
 
-//void xwb_scope_run(struct xwb_scope * scope)
-//{
-//  uint32_t data_w[1] = {0x02};
-//  struct sdb_node_address reg_csr0;
-//  memcpy(&reg_csr0, &scope->sdb.address, sizeof(struct sdb_node_address));
-//
-//  pghal_bus_write(scope->sdb.bus, &reg_csr0.address , 1*sizeof(uint32_t), data_w);
-//}
+
+void   xwb_scope_registers_download(struct xwb_scope * scope)
+{
+
+  struct sdb_node_address reg_csr;
+  memcpy(&reg_csr, &scope->sdb.address, sizeof(struct sdb_node_address));
+
+  pghal_bus_read(scope->sdb.bus, &reg_csr.address, sizeof(struct xwb_scope_csr), &scope->reg);
+
+}
+
+
+void xwb_scope_set_address_range(struct xwb_scope * scope, uint32_t start, uint32_t size){
+  uint32_t data[2] = {start, start + size - 1};
+  struct sdb_node_address reg_csr;
+  memcpy(&reg_csr, &scope->sdb.address, sizeof(struct sdb_node_address));
+  reg_csr.sdb_address += 8;
+  pghal_bus_write(scope->sdb.bus, &reg_csr.address, 2*sizeof(uint32_t), data);
+  xwb_scope_registers_download(scope); 
+} 
 
 void xwb_scope_stop(struct xwb_scope * scope)
 {
