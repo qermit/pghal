@@ -40,6 +40,12 @@ OBJ += $(OBJ_WB) $(OBJ_CHIP)
 
 all: fmc2_config fmc2_test_pattern fmc2_test_scope
 
+dma_to_device: dma_to_device.o
+	$(CC) -lrt -o $@ $< -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -D_LARGE_FILE_SOURCE
+
+dma_to_device.o: dma_to_device.c
+	$(CC) -c -std=c99 -o $@ $< -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -D_LARGE_FILE_SOURCE
+
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
