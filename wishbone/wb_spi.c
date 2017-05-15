@@ -33,6 +33,7 @@ static int wb_spi_write_read(struct pghal_spi * spi, uint8_t spi_ss, struct pgha
 
   int transfer_len = 0;
   int i;
+  uint32_t CR;
   int wr_length = (op->wr_ptr_end - op->wr_ptr);
   int rd_length = (op->rd_ptr_end - op->rd_ptr);
   
@@ -42,6 +43,14 @@ static int wb_spi_write_read(struct pghal_spi * spi, uint8_t spi_ss, struct pgha
   if (wr_length > transfer_len) transfer_len = wr_length;
   if (rd_length > transfer_len) transfer_len = rd_length;
   
+
+  if ((spi->flags & (PGHAL_SPI_CPHA_BIT | PGHAL_SPI_CPHA_BIT)) == 0) {
+      CR =  0x400;
+  }
+  CR |= 0x0008; 
+  pghal_bus_write(wb_spi->sdb.bus, &reg_spi_ctrl.address , 1*sizeof(uint32_t), &CR);
+    
+  //  data_w[0] = 0x0108 | (( spi->tx_on_rising == 1 ) ? 0x0400 : 0) | (( spi->tx_on_rising == 1 ) ? 0x200 : 0);
 
   uint32_t data_w[1] = { 1 << spi_ss } ;
   uint8_t * rd_ptr = op->rd_ptr;
@@ -54,10 +63,12 @@ static int wb_spi_write_read(struct pghal_spi * spi, uint8_t spi_ss, struct pgha
     } else {
        data_w[0] = 0xFF;
     }
-//    printf("wb_spi_write_read, write[%d] = 0x%x\n", i, data_w[0]);
     pghal_bus_write(wb_spi->sdb.bus, &reg_spi_tx_0.address , 1*sizeof(uint32_t), data_w);
-    data_w[0] = 0x0108 | 0x0400;
-    pghal_bus_write(wb_spi->sdb.bus, &reg_spi_ctrl.address , 1*sizeof(uint32_t), data_w);
+  
+    
+    //data_w[0] = 0x0108 | (( spi->tx_on_rising == 1 ) ? 0x0400 : 0) | (( spi->tx_on_rising == 1 ) ? 0x200 : 0);
+    CR |= 0x100; // go
+    pghal_bus_write(wb_spi->sdb.bus, &reg_spi_ctrl.address , 1*sizeof(uint32_t), &CR);
    
     pghal_bus_read(wb_spi->sdb.bus, &reg_spi_ctrl.address , 1*sizeof(uint32_t), data_w);
     while(data_w[0] & 0x0100) {

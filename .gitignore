@@ -1,3 +1,5 @@
 sdbfactory
 fmc2_config
+fmc2_test_pattern
+fmc2_test_scope
 *.o

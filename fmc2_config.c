@@ -33,6 +33,10 @@
 // CHIPS include
 #include "chip/chip_ad9510.h"
 #include "chip/chip_si57x.h"
+#include "chip/chip_isla216p.h"
+
+
+#include "static_offsets.h"
 
 static struct pghal_list node_drivers_head = LIST_HEAD_INIT(node_drivers_head);
 static struct pghal_list bus_drivers_head = LIST_HEAD_INIT(bus_drivers_head);
@@ -54,23 +58,42 @@ int main( int argc, char** argv){
   xdma_bus_driver_register(&bus_drivers_head);
   xdma_node_driver_register(&node_drivers_head);
 
+  int fmc_id = 1;
+  uint32_t OFFSET_FMC = OFFSET_FMC1;
+  if (argc > 1) {
+   if (argv[1][0] == '1') {
+     fmc_id = 1;
+   } else if (argv[1][0] == '2' ) {
+     fmc_id = 2;
+   }
+  }
+
+  if (fmc_id == 1) {
+   OFFSET_FMC = OFFSET_FMC1;
+  } else if (fmc_id == 2) {
+   OFFSET_FMC = OFFSET_FMC2;
+  }
+  
   struct xdma_node * xdma = NULL;
   xdma = xdma_open_bus("/dev/xdma/card0/user");
 
-  struct wb_gpio_raw * fmc1_gpio = wb_gpio_raw_create_direct(&xdma->bus, 0x00002100);
-  struct wb_gpio_raw * fmc2_gpio = wb_gpio_raw_create_direct(&xdma->bus, 0x00004200);
+//  struct wb_gpio_raw * fmc1_gpio = wb_gpio_raw_create_direct(&xdma->bus, OFFSET_FMC1 | OFFSET_DIO5_GPIO);
+  struct wb_gpio_raw * fmc2_gpio = wb_gpio_raw_create_direct(&xdma->bus, OFFSET_FMC | OFFSET_ADC250_GPIO);
   wb_gpio_raw_set_port_direction(fmc2_gpio, 0x08); 
   wb_gpio_raw_set_port_value(fmc2_gpio, 0x8, 0x8); 
 
   // debug spi and i2c over FMC1 dio;
-  wb_gpio_raw_set_port_altf(fmc1_gpio, 0x1F); 
-  wb_gpio_raw_set_port_direction(fmc1_gpio, 0x1F); 
+  // it's bitstream specific
+//  wb_gpio_raw_set_port_altf(fmc1_gpio, 0b00000110); 
+//  wb_gpio_raw_set_port_direction(fmc1_gpio, 0b00000110); 
+//  wb_gpio_raw_set_port_termination(fmc1_gpio, 0b00000001); 
 
 
-  double fnew = 125.0;
-  struct wb_i2c * si57x_i2c_bus = wb_i2c_init(&xdma->bus ,0x00004100);
+  double fnew = 100.0;
+  struct wb_i2c * si57x_i2c_bus = wb_i2c_init(&xdma->bus , OFFSET_FMC | OFFSET_ADC250_I2C_SI57X);
   struct chip_si57x * fmc2_si57x = chip_si57x_init(&si57x_i2c_bus->i2c);
 
+  if (1) { 
   if (0) {
     chip_si57x_decode_part_number(fmc2_si57x, "TESTTESTTEST01");
     fnew = 161.132812;
@@ -80,52 +103,93 @@ int main( int argc, char** argv){
   }  
 
   chip_si57x_reload_initial(fmc2_si57x);
+
   chip_si57x_find_valid_combo(fmc2_si57x, fnew, SI57X_METHOD_HARD);
   chip_si57x_send_regs(fmc2_si57x, &fmc2_si57x->reg_new, SI57X_METHOD_HARD);
   chip_si57x_registers_download(fmc2_si57x);
 
   // enbable VCXO and PLL
   wb_gpio_raw_set_port_value(fmc2_gpio, 0x00, 0x20); 
+//  wb_gpio_raw_set_port_altf(fmc2_gpio, 0x8); 
+  wb_gpio_raw_set_port_altf(fmc2_gpio, 0x0);  // <- reset all alternative functions
   usleep(1);
   wb_gpio_raw_set_port_value(fmc2_gpio, 0x2000 | 0x20, 0x2000 | 0x20); 
-  wb_gpio_raw_set_port_direction(fmc2_gpio, 0x2000 | 0x20 | 0x08);
-
-  struct wb_spi * spi_ad9510   = wb_spi_init(&xdma->bus, 0x00004000);
+  //wb_gpio_raw_set_port_direction(fmc2_gpio, 0x2000 | 0x20 | 0x08); // 0x08: trigger
+  wb_gpio_raw_set_port_direction(fmc2_gpio, 0x2000 | 0x20);
+  }
+  if (1) {
+  // configure AD9510
+  struct wb_spi * spi_ad9510   = wb_spi_init(&xdma->bus, OFFSET_FMC | OFFSET_ADC250_SPI_AD9510);
   struct chip_ad9510 * chip_ad9510 = chip_ad9510_init(&spi_ad9510->spi);
 
   chip_ad9510_set_address(chip_ad9510, 0);
   chip_ad9510_soft_reset(chip_ad9510);
+
+//  return 0;
   chip_ad9510_registers_download(chip_ad9510, 0, 100);
-  chip_ad9510_config0(chip_ad9510);
+  chip_ad9510_config1(chip_ad9510);
   chip_ad9510_registers_download(chip_ad9510, 0, 100); // donload to assert;
   chip_ad9510_registers_commit(chip_ad9510);
   
   wb_gpio_raw_set_port_value(fmc2_gpio, 0, 0x8); 
-  return 0;
-
-  usleep(1);
-  int tmp_i = 0x0;
-  int tmp_len = tmp_i+91;
-  for (; tmp_i < tmp_len; tmp_i += 2) {
-   pghal_spi_a16_read(&spi_ad9510->spi, 0, tmp_i, 2, &chip_ad9510->regs[tmp_i]);
   }
-  printf("      0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F");
-  for (tmp_i = 0; tmp_i < tmp_len; tmp_i += 1) {
-   if ( tmp_i % 16 == 0) printf("\n%2X0:", tmp_i / 16);
-//   spi_op.rd_ptr = &chip_ad9510.regs[tmp_i];
-//   chip_ad9510_prepare_read(&spi_op, tmp_i, 1);
-//   wb_spi_write_read_direct(spi_ad9510, 0, &spi_op);
+  //configure 4x ADC
+  struct wb_spi * spi_isla216p = wb_spi_init(&xdma->bus, OFFSET_FMC | OFFSET_ADC250_SPI_ISLA);
+  if (1) {
+  // assert and deassert ADC resets
+  wb_gpio_raw_set_port_value(fmc2_gpio, 0x0000, 0x0400);
+  usleep(1000);
+  wb_gpio_raw_set_port_value(fmc2_gpio, 0x0400, 0x0400);
+  usleep(1000);
 
-   printf (" %02x", chip_ad9510->regs[tmp_i]);
+
+  int isla_chips = 4;
+  struct chip_isla216p * fmc2_isla216p[4];
+  // reset first, wait for all in separate loop
+  { int i;
+    for (i = 0 ; i<isla_chips; i++){
+      fmc2_isla216p[i] = chip_isla216p_init(&spi_isla216p->spi);
+      chip_isla216p_set_address(fmc2_isla216p[i], i);
+      chip_isla216p_soft_reset(fmc2_isla216p[i]);
+      fmc2_isla216p[i]->reg_current.cal[0] = 0;
+
+    }
+    // get standard cal time
+    usleep(chip_isla216p_get_cal_time_ms(fnew) * 1000);
+    for (i = 0 ; i<isla_chips; i++){
+      int counter = 0;
+      //fmc2_isla216p[i]->reg_current.cal[0] = 
+      chip_isla216p_registers_download(fmc2_isla216p[i], CHIP_ISLA216P_CAL_ID);
+      while( fmc2_isla216p[i]->reg_current.cal[0] != 0x91) {
+        printf("Chip[%d] wait for cal bit: %d -> %02X\n", i, counter++,fmc2_isla216p[i]->reg_current.cal[0]);
+        usleep(1000);
+        chip_isla216p_registers_download(fmc2_isla216p[i], CHIP_ISLA216P_CAL_ID);
+      }
+      printf("Chip[%d] done after: %d loops\n", i, counter);
+      chip_isla216p_registers_download(fmc2_isla216p[i], CHIP_ISLA216P_ALL_ID);
+      printf("Chip[%d] Mode: %02X\n", i, fmc2_isla216p[i]->reg_current.adc[5]);
+      fmc2_isla216p[i]->reg_current.adc[5] = 0x01;
+
+      fmc2_isla216p[i]->reg_current.out[2] = 0x01;
+      fmc2_isla216p[i]->reg_current.out[3] = 0x24;
+      if (fnew < 90) {
+        fmc2_isla216p[i]->reg_current.out[4] |= 0x40;
+      } else {
+        fmc2_isla216p[i]->reg_current.out[4] &= 0xBF;
+      }
+      chip_isla216p_registers_upload(fmc2_isla216p[i], CHIP_ISLA216P_OUT_ID | CHIP_ISLA216P_ADC_ID, NULL );
+      chip_isla216p_test_path(fmc2_isla216p[i], ISLA216P_TEST_PATTERN_OFF, 0x0000, 0x0000, 0x0000, 0x0000);
+      
+      
+    }
+    
   }
-
-  printf ("\n");
   
   
+   }
 
   
   return 0;
-  struct wb_spi * spi_isla216p = wb_spi_init(&xdma->bus, 0x00004020);
   struct wb_spi * spi_amc7823  = wb_spi_init(&xdma->bus, 0x00004040);
   //printf("Chip presetn: %d\n",  pghal_i2c_chip_present(&si57x_i2c_bus->i2c, 0x48));
   

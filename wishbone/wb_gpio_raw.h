@@ -12,11 +12,16 @@ struct wb_gpio_raw * wb_gpio_raw_create_direct(struct pghal_bus * bus, uint32_t 
 
 
 void     wb_gpio_raw_set_port_direction(struct wb_gpio_raw * gpio, uint32_t dir_out);
+
 /*
 uint32_t wb_gpio_raw_get_port_direction(struct * wb_gpio_raw);
 
-void     wb_gpio_raw_set_port_termination(struct * wb_gpio_raw, uint32_t term_en);
-uint32_t wb_gpio_raw_get_port_termination(struct * wb_gpio_raw);
+*/
+
+void     wb_gpio_raw_set_port_termination(struct wb_gpio_raw * gpio, uint32_t term_en);
+
+/*
+uint32_t wb_gpio_raw_get_port_termination(struct wb_gpio_raw * gpio);
 */
 void     wb_gpio_raw_set_port_altf(struct wb_gpio_raw * gpio, uint32_t altf);
 /*

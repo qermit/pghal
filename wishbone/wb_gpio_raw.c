@@ -26,6 +26,13 @@ struct wb_gpio_raw * wb_gpio_raw_create_direct(struct pghal_bus * bus, uint32_t 
 
   return gpio;
 }
+void     wb_gpio_raw_set_port_termination(struct wb_gpio_raw * gpio, uint32_t term_en) {
+  uint32_t data_w[1] = {term_en};
+  struct sdb_node_address reg_term;
+  memcpy(&reg_term, &gpio->sdb.address, sizeof(struct sdb_node_address));
+  reg_term.sdb_address = reg_term.sdb_address + WB_GPIO_RAW_TERM;
+  pghal_bus_write(gpio->sdb.bus, &reg_term.address , 1*sizeof(uint32_t), data_w);
+}
 
 void     wb_gpio_raw_set_port_altf(struct wb_gpio_raw *gpio, uint32_t altf) {
   uint32_t data_w[1] = {altf};

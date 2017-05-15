@@ -70,3 +70,9 @@ int pghal_spi_write_read(struct pghal_spi * spi, uint8_t ss_id, struct pghal_op_
   return spi->write_read(spi, ss_id, op);
 }
 
+
+void pghal_spi_set_params(struct pghal_spi * spi, uint8_t flags)
+{
+  spi->flags = flags;
+}
+
