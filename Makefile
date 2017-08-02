@@ -61,6 +61,9 @@ fmc2_config: $(OBJ) fmc2_config.o
 fmc2_test_pattern: $(OBJ) fmc2_test_pattern.o
 	gcc -o $@ $^ $(CFLAGS) ${LDFLAGS}
 
+watch_xscope:  $(OBJ) watch_xscope.o
+	gcc -o $@ $^ $(CFLAGS) ${LDFLAGS}
+
 
 .PHONY: clean
 clean:

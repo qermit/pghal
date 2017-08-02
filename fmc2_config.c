@@ -75,7 +75,7 @@ int main( int argc, char** argv){
   }
   
   struct xdma_node * xdma = NULL;
-  xdma = xdma_open_bus("/dev/xdma/card0/user");
+  xdma = xdma_open_bus("/dev/xdma/card4/user");
 
 //  struct wb_gpio_raw * fmc1_gpio = wb_gpio_raw_create_direct(&xdma->bus, OFFSET_FMC1 | OFFSET_DIO5_GPIO);
   struct wb_gpio_raw * fmc2_gpio = wb_gpio_raw_create_direct(&xdma->bus, OFFSET_FMC | OFFSET_ADC250_GPIO);
