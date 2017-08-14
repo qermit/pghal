@@ -1,0 +1,43 @@
+#ifndef __WB_SDB_ROM_H__
+#define __WB_SDB_ROM_H__
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define SDB_ID_DEVICE 0x01
+#define SDB_ID_DEVICE 0x01
+#define SDB_ID_DEVICE 0x01
+
+// 64 bytes = 512 bits
+#define SDB_RECORD_LENGTH 64
+
+
+struct wb_sdb_rom {
+  struct sdb_module sdb;
+
+  struct wb_sdb_rom * parent; // parent sdb_rom
+  struct pghal_list list; // list of all sdb_roms at the same level
+  uint32_t entry_id;      // id that matches bridge entry id
+  
+  uint32_t bus_address;
+  // SDB entry
+  //  struct wb_sdb_entry * entries;
+
+  struct pghal_list  entry_list;  // list of sub modules
+  struct pghal_list  rom_list; // list of sub bridges
+};
+
+
+
+struct wb_sdb_rom * wb_sdb_rom_create_direct(struct pghal_bus * bus, uint32_t bus_address, uint32_t sdb_address);
+int wb_sdb_get_name_by_id(struct wb_sdb_rom * sdb_rom, char * id_string, char * name);
+int wb_sdb_get_addr_by_id(struct wb_sdb_rom * sdb_rom, char * id_string, uint32_t * sdb_address);
+void wb_sdb_rom_dump(struct wb_sdb_rom * sdb_rom);
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
