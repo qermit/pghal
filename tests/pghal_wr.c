@@ -59,14 +59,26 @@ int main( int argc, char** argv){
   xdma_bus_driver_register(&bus_drivers_head);
   xdma_node_driver_register(&node_drivers_head);
 
-  uint32_t rw_address = 0;
   uint32_t rw_data    = 0;
+  uint32_t rw_address = 0;
+  char *   rw_component_id = NULL;
+  uint32_t rw_offset = 0;
 
   enum { MODE_WRITE, MODE_READ, MODE_DUMPSDB } mode = MODE_READ;
 
   int opt;
-  while((opt = getopt(argc, argv, "a:w:d")) != -1 ) {
+
+  char * save_ptr;
+  char *token = NULL;
+
+  while((opt = getopt(argc, argv, "u:a:w:d")) != -1 ) {
     switch (opt) {
+    case 'u':
+      token = strtok_r(optarg, "+", &save_ptr);
+      rw_component_id = strdup(token);
+      token = strtok_r(NULL, "+", &save_ptr);
+      if (token != NULL) rw_offset = strtol(token, NULL, 0);
+      break;
     case 'a': 
       if (optarg != NULL)  rw_address = strtol(optarg, NULL, 0);
       break;
@@ -84,20 +96,27 @@ int main( int argc, char** argv){
   struct pghal_bus * bus = NULL;
   bus = uart_open_bus("/dev/ttyUSB0");
 
-  struct sdb_node_address * node_address = sdb_address_create(bus, rw_address);
-  uint32_t rd_data;
+
+  struct wb_sdb_rom * sdb_rom = wb_sdb_rom_create_direct(bus, 0x0, 0x0); 
+  if (rw_component_id != NULL) {
+    wb_sdb_get_addr_by_ids(sdb_rom, rw_component_id, &rw_address);
+    printf("Component %s: @%08X+%08X\n", rw_component_id, rw_address, rw_offset);
+  }
  
+  struct sdb_node_address * node_address = sdb_address_create(bus, rw_address+rw_offset);
+  uint32_t rd_data;
+  
   if (mode == MODE_READ) {
     pghal_bus_read(bus, &node_address->address, 1, &rd_data);
-    printf("DATA @%08X: %08X\n", rw_address, rd_data);
+    printf("DATA @%08X: %08X\n", rw_address+rw_offset, rd_data);
   } else if (mode == MODE_WRITE) {
     pghal_bus_write(bus, &node_address->address, 1, &rw_data);
   } else if (mode == MODE_DUMPSDB) {
-    struct wb_sdb_rom * sdb_rom = wb_sdb_rom_create_direct(bus, 0x0, 0x0); 
     wb_sdb_rom_dump(sdb_rom); 
   }
 
 
+  if (rw_component_id != NULL) { free(rw_component_id); }
 
 
 
