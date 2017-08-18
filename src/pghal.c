@@ -75,7 +75,7 @@ size_t pghal_bus_write(struct pghal_bus * bus, struct pghal_address * addr, size
   return  driver->op.write(bus, addr, wr_len, wr_ptr);
 }
 
-uint32_t pghal_bus_read(struct pghal_bus *bus, struct pghal_address * addr, size_t rd_len, void *rd_ptr)
+size_t pghal_bus_read(struct pghal_bus *bus, struct pghal_address * addr, size_t rd_len, void *rd_ptr)
 {
   if (bus == NULL) return 0;
   struct pghal_bus_driver * driver = bus->driver;

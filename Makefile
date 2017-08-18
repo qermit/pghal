@@ -25,11 +25,14 @@ DEPS_H += $(DEPS_WB) $(DEPS_CHIP)
 DEPS = Makefile $(DEPS_H) $(DEPS_WB) $(DEPS_CHIP)
 OBJ += $(OBJ_WB) $(OBJ_CHIP)
 
+all: alltests
+
 include $(TEST_DIR)/makefile.mk
 
 TEST_PROGS = $(TEST_OBJ:.o=)
 
-all: tests/xdma_enum_cards
+alltests: $(TEST_PROGS)
+
 
 dma_to_device: dma_to_device.o
 	$(CC) -lrt -o $@ $< -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -D_LARGE_FILE_SOURCE

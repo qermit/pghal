@@ -58,8 +58,10 @@ void init_procedure(struct pghal_bus * bus, char * card_name) {
   struct wb_gpio_raw * afc_gpio = NULL;
   struct wb_gpio_raw * fmc1_dio_gpio = NULL;
   struct wb_fmc_csr * fmc1_csr  = NULL;
+ 
+  wb_sdb_rom_dump(sdb_rom); 
 
-  len = wb_sdb_get_addr_by_id(sdb_rom, "1", &tmp_addr);
+  len = wb_sdb_get_addr_by_ids(sdb_rom, "1", &tmp_addr);
   if (len >= 0)
      dna = wb_xilinx_dna_create_direct(bus, tmp_addr);
   wb_xilinx_dna_registers_download(dna);
@@ -67,13 +69,13 @@ void init_procedure(struct pghal_bus * bus, char * card_name) {
 
 
 
-  wb_sdb_get_addr_by_id(sdb_rom, "2", &tmp_addr);
+  wb_sdb_get_addr_by_ids(sdb_rom, "2", &tmp_addr);
   afc_gpio = wb_gpio_raw_create_direct(bus, tmp_addr);
 
-  wb_sdb_get_addr_by_id(sdb_rom, "4.4", &tmp_addr);
+  wb_sdb_get_addr_by_ids(sdb_rom, "4.4", &tmp_addr);
   fmc1_dio_gpio = wb_gpio_raw_create_direct(bus, tmp_addr);
 
-  wb_sdb_get_addr_by_id(sdb_rom, "4.1", &tmp_addr);
+  wb_sdb_get_addr_by_ids(sdb_rom, "4.1", &tmp_addr);
   fmc1_csr = wb_fmc_csr_create_direct(bus, tmp_addr);
 
 

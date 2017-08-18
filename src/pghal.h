@@ -117,7 +117,7 @@ void pghal_bus_driver_register( struct pghal_list *list, struct pghal_bus_driver
 
 
 size_t pghal_bus_write(struct pghal_bus * bus, struct pghal_address * addr, size_t wr_len, void *wr_ptr );
-size_t pghal_bus_write(struct pghal_bus * bus, struct pghal_address * addr, size_t rd_len, void *rd_ptr );
+size_t pghal_bus_read(struct pghal_bus * bus, struct pghal_address * addr, size_t rd_len, void *rd_ptr );
 
 struct sdbbus{
   struct pghal_bus bus;

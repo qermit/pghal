@@ -108,12 +108,16 @@ uint32_t uart_read_direct(struct uart_node * uart, uint32_t addr) {
   uint32_t read_result = 0 ;
   int res;
   char buffer[20];
-  int len = sprintf(buffer, "r%X\r", addr);
+  int len = sprintf(buffer, "r%08X\r", addr);
 
   write(uart->fd,buffer,len);
   res = read(uart->fd, buffer, 11);
+//  fprintf(stderr, "<%s\n",buffer);
   char status;
   sscanf(buffer,"%c%08X", &status, &read_result);
+  if (uart->debug)
+    fprintf(stderr, "<r%08X:%c%08X\n",addr,status,read_result);
+  
   return read_result;
 
 }
@@ -123,9 +127,12 @@ void uart_write_direct(struct uart_node * uart, uint32_t addr, uint32_t value) {
   int res;
   char buffer[30];
   int len = sprintf(buffer, "d%08X\rw%08X\r", value, addr);
+  if (uart->debug)
+    fprintf(stderr, ">w%08X:d%08X\n",addr, value);
   write(uart->fd,buffer,len);
 
   res = read(uart->fd, buffer, 11);
+//  fprintf(stderr, "<%s\n",buffer);
   char status;
   sscanf(buffer,"%c%08X", &status, &read_result);
 }
@@ -214,7 +221,6 @@ struct uart_node * uart_creat_open(char * address)
 
   int c, res;
   char buf[255];
-  printf("test %s\n", address);
   uart->fd = open(address, O_RDWR | O_NOCTTY ); 
   if (uart->fd <0) {perror(address); exit(-1); }
   

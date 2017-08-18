@@ -19,6 +19,7 @@ struct uart_node {
     
   // all data required to do write/read ops 
   int fd;
+  int debug;
   struct termios oldtio;
   struct termios newtio;
 

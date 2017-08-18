@@ -92,7 +92,7 @@ int wb_sdb_rom_read_entry(struct wb_sdb_rom * sdb_rom, uint32_t entry_id, struct
   return 0;
 }
 
-struct wb_sdb_entry * wb_sdb_get_by_id(struct wb_sdb_rom * sdb_rom, char * id_string) {
+struct wb_sdb_entry * wb_sdb_get_by_ids(struct wb_sdb_rom * sdb_rom, char * id_string) {
    char *save_ptr;
    //@todo: check alloc
    char * id_copy = strdup(id_string);
@@ -150,16 +150,37 @@ free_data:
 
 }
 
+int wb_sdb_get_addr_by_id(struct wb_sdb_rom * sdb_rom, uint16_t id, uint32_t * sdb_address)
+{
+   int ret_val = -2;
+   char id_string[6];
+   sprintf(id_string, "%d", id);
+   struct wb_sdb_entry * entry = wb_sdb_get_by_ids(sdb_rom, id_string);
+   if (entry == NULL) {
+     return -1;
+   } else {
+     struct sdb_component *tmp_component = NULL;
+     if (entry->data.record_type == sdb_type_device) tmp_component = &((struct sdb_device*) &entry->data)->sdb_component;
+     if (entry->data.record_type == sdb_type_interconnect) tmp_component = &((struct sdb_interconnect*) &entry->data)->sdb_component;
+     if (entry->data.record_type == sdb_type_bridge) tmp_component = &((struct sdb_bridge*) &entry->data)->sdb_component;
+     if (tmp_component != NULL) {
+//        printf("tmp_component%02X: %08X\n", entry->data.record_type, tmp_component->addr_first);
+       *sdb_address = tmp_component->addr_first + entry->parent->bus_address;
+        ret_val = 0;
+     }
+   }
+   return ret_val;
+}
 // 0 -> return name of root interconnect
 // 1 -> return name of device/bridge/... in root interconnect
 // 1.0 -> return name of interconnect inside bridge
 // 1.1 ->  return name of device/bridge/... in bridged interconnect
 // returns length of name
-int wb_sdb_get_addr_by_id(struct wb_sdb_rom * sdb_rom, char * id_string, uint32_t * sdb_address)
+int wb_sdb_get_addr_by_ids(struct wb_sdb_rom * sdb_rom, char * id_string, uint32_t * sdb_address)
 {
    int ret_val = -2;
 //   printf("wb_sdb_get_addr_by_id: %s\n", id_string);
-   struct wb_sdb_entry * entry = wb_sdb_get_by_id(sdb_rom, id_string);
+   struct wb_sdb_entry * entry = wb_sdb_get_by_ids(sdb_rom, id_string);
    if (entry == NULL) {
      return -1;
    } else {
@@ -176,10 +197,31 @@ int wb_sdb_get_addr_by_id(struct wb_sdb_rom * sdb_rom, char * id_string, uint32_
    return ret_val;
 }
 
-int wb_sdb_get_name_by_id(struct wb_sdb_rom * sdb_rom, char * id_string, char * name)
+int wb_sdb_get_name_by_id(struct wb_sdb_rom * sdb_rom, uint16_t id, char * name)
 {
    int ret_val = 0;
-   struct wb_sdb_entry * entry = wb_sdb_get_by_id(sdb_rom, id_string);
+   char id_string[6];
+   sprintf(id_string, "%d", id);
+   struct wb_sdb_entry * entry = wb_sdb_get_by_ids(sdb_rom, id_string);
+   if (entry == NULL) {
+//     printf("Entry not found\n");
+     return -1;
+   } else {
+     struct sdb_component *tmp_component = NULL;
+     if (entry->data.record_type == sdb_type_device) tmp_component = &((struct sdb_device*) &entry->data)->sdb_component;
+     if (entry->data.record_type == sdb_type_interconnect) tmp_component = &((struct sdb_interconnect*) &entry->data)->sdb_component;
+     if (entry->data.record_type == sdb_type_bridge) tmp_component = &((struct sdb_bridge*) &entry->data)->sdb_component;
+     if (tmp_component != NULL) {
+       ret_val = sprintf(name, "%.19s", tmp_component->product.name);
+     }
+   }
+   return ret_val;
+}
+
+int wb_sdb_get_name_by_ids(struct wb_sdb_rom * sdb_rom, char * id_string, char * name)
+{
+   int ret_val = 0;
+   struct wb_sdb_entry * entry = wb_sdb_get_by_ids(sdb_rom, id_string);
    if (entry == NULL) {
 //     printf("Entry not found\n");
      return -1;
