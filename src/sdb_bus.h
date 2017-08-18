@@ -13,6 +13,7 @@ struct sdb_node_address {
 
 // TODO: opis struktury
 struct sdb_entry {
+  uint32_t empty;
 };
 
 struct sdb_module {
