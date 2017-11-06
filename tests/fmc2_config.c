@@ -43,7 +43,12 @@
 
 #include "fmc/fmc_adc250m.h"
 
-#include "static_offsets.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <getopt.h>
+
+//#include "static_offsets.h"
 
 static struct pghal_list node_drivers_head = LIST_HEAD_INIT(node_drivers_head);
 static struct pghal_list bus_drivers_head = LIST_HEAD_INIT(bus_drivers_head);
@@ -60,33 +65,92 @@ void print_summary(struct chip_si57x * chip, struct chip_si57x_regs * regs)
   printf("===============================\n");
 }
 
+void print_help(char * argv0)
+{
+  fprintf(stderr, "Usage: %s [-t nsecs] [-n] name\n", argv0); 
+}
+
 int main( int argc, char** argv){
   
   xdma_bus_driver_register(&bus_drivers_head);
   xdma_node_driver_register(&node_drivers_head);
-
-  int fmc_id = 2;
-  uint32_t OFFSET_FMC = OFFSET_FMC1;
-  if (argc > 1) {
-   if (argv[1][0] == '1') {
-     fmc_id = 1;
-   } else if (argv[1][0] == '2' ) {
-     fmc_id = 2;
-   }
-  }
-
-  if (fmc_id == 1) {
-   OFFSET_FMC = OFFSET_FMC1;
-  } else if (fmc_id == 2) {
-   OFFSET_FMC = OFFSET_FMC2;
-  }
   
   struct pghal_bus * bus = NULL;
-  // bus = xdma_open_bus("/dev/xdma/card4/user");
-  bus = uart_open_bus("/dev/ttyUSB0");
+  char * devicename = NULL;
+  int fmc_id = 1;
+  double fnew = 125.0;
+  double fnew_tmp = 100.0;
+
+  int c;
+  int digit_optind = 0;
+  while (1) {
+        int this_option_optind = optind ? optind : 1;
+        int option_index = 0;
+        static struct option long_options[] = {
+            {"device",  required_argument, 0,  0 },
+            {"fmc_id",  required_argument, 0,  0 },
+            {"freq",    required_argument, 0,  0 },
+            {0,         0,                 0,  0 }
+        };
+        c = getopt_long(argc, argv, "d:i:f:", long_options, &option_index);
+        if (c == -1)
+            break;
+        switch (c) {
+          case 'd':
+            if (devicename != NULL) free(devicename);
+            devicename = strdup(optarg);
+            break;  
+          case 'i':
+            if (optarg != NULL)  fmc_id = strtol(optarg, NULL, 0); 
+            break;
+          case 'f':
+            fnew_tmp = strtod(optarg, NULL);
+            // @todo: add some checks
+            fnew = fnew_tmp;
+            break;
+          default: 
+            print_help(argv[0]);
+            exit(EXIT_FAILURE);
+        }
+   }
+
+  if (fmc_id < 1 || fmc_id > 2) fmc_id = 1;
+
+  if(devicename == NULL) {
+    devicename = strdup("/dev/ttyUSB0");
+  }
+
+  if (strncmp("/dev/ttyUSB", devicename, strlen("/dev/ttyUSB")) == 0) {
+    bus = uart_open_bus(devicename);
+  } else if (strncmp("/dev/xdma/", devicename, strlen("/dev/xdma/")) == 0) {
+    bus = xdma_open_bus(devicename);
+  } else {
+    fprintf(stderr, "Unknown driver for device \"%s\"\n", devicename);
+            exit(EXIT_FAILURE);
+  }
+
   struct wb_sdb_rom * sdb_rom = wb_sdb_rom_create_direct(bus, 0x0, 0x0); 
-  
-  struct fmc_adc250m * fmc2 = fmc_adc250m_init(bus, 0x2000, 0x2000);
+  // @todo: automagic fmc search
+  //
+  uint32_t OFFSET_FMC = 0;
+  uint16_t fmc_component_id = 0;
+  {
+    int i = 10;
+    char s_name[10];
+    char tmp_name[32];
+    
+    sprintf(s_name, "fmc%d", fmc_id); 
+    for (i=3; i<7; i++){
+      int len = wb_sdb_get_name_by_id(sdb_rom, i, tmp_name);
+      if (len < 0) continue;
+      if (strncmp(s_name, tmp_name,strlen(s_name)) != 0) continue;
+      fmc_component_id = i;
+      wb_sdb_get_addr_by_id(sdb_rom, i, &OFFSET_FMC);
+    }
+  }
+  if (fmc_component_id == 0) exit(1);
+  printf("Device: %s, fmc_id: %d, offset: %08X\n", devicename, fmc_id, OFFSET_FMC);
+  struct fmc_adc250m * fmc2 = fmc_adc250m_init(bus, OFFSET_FMC, OFFSET_FMC);
 
   // set trigger as input
   wb_gpio_raw_set_port_direction(fmc2->gpio, 0x2000 | 0x20);
@@ -96,8 +160,8 @@ int main( int argc, char** argv){
   wb_gpio_raw_set_port_altf(fmc2->gpio, 0x0);        // <- reset all alternative functions
   wb_gpio_raw_set_port_value(fmc2->gpio, 0x20, 0x20 | 0x2000); 
 
-  wb_gpio_raw_set_port_value(fmc2->gpio, 0x0400, 0x0400);
-//  wb_gpio_raw_set_port_value(fmc2->gpio, 0x0000, 0x0400);
+//  wb_gpio_raw_set_port_value(fmc2->gpio, 0x0400, 0x0400);
+  wb_gpio_raw_set_port_value(fmc2->gpio, 0x0000, 0x0400);
 //  usleep(1000);
 //  */
   //return 0; 
@@ -107,24 +171,19 @@ int main( int argc, char** argv){
 //  wb_gpio_raw_set_port_direction(fmc1_gpio, 0b00000110); 
 
 
-  double fnew = 100.0;
 
   if (1) { 
   if (0) {
     chip_si57x_decode_part_number(fmc2->chip_si57x, "TESTTESTTEST01");
-    fnew = 161.132812;
   } else {
     chip_si57x_decode_part_number(fmc2->chip_si57x, "571AJC000337DG");
-    fnew = 125.0;
   }  
-  printf("Fnew: %lf\n", fnew);
 
   chip_si57x_reload_initial(fmc2->chip_si57x);
   //return 0;
   chip_si57x_find_valid_combo(fmc2->chip_si57x, fnew, SI57X_METHOD_HARD);
   chip_si57x_send_regs(fmc2->chip_si57x, &fmc2->chip_si57x->reg_new, SI57X_METHOD_HARD);
   chip_si57x_registers_download(fmc2->chip_si57x);
-
 
 //  return 0;
   // enbable VCXO and PLL
@@ -149,7 +208,6 @@ int main( int argc, char** argv){
     chip_ad9510_registers_commit(fmc2->chip_ad9510);
   
   }
-
 
   //configure 4x ADC
   if (1) {

@@ -46,6 +46,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <getopt.h>
 
 #include "static_offsets.h"
 
@@ -53,11 +54,18 @@ static struct pghal_list node_drivers_head = LIST_HEAD_INIT(node_drivers_head);
 static struct pghal_list bus_drivers_head = LIST_HEAD_INIT(bus_drivers_head);
 
 
+void print_help(char * argv0)
+{
+  fprintf(stderr, "Usage: %s [-t nsecs] [-n] name\n", argv0); 
+}
 
 int main( int argc, char** argv){
   
   xdma_bus_driver_register(&bus_drivers_head);
   xdma_node_driver_register(&node_drivers_head);
+
+  struct pghal_bus * bus = NULL;
+  char * devicename = NULL;
 
   uint32_t rw_data    = 0;
   uint32_t rw_address = 0;
@@ -71,31 +79,59 @@ int main( int argc, char** argv){
   char * save_ptr;
   char *token = NULL;
 
-  while((opt = getopt(argc, argv, "u:a:w:d")) != -1 ) {
-    switch (opt) {
-    case 'u':
-      token = strtok_r(optarg, "+", &save_ptr);
-      rw_component_id = strdup(token);
-      token = strtok_r(NULL, "+", &save_ptr);
-      if (token != NULL) rw_offset = strtol(token, NULL, 0);
-      break;
-    case 'a': 
-      if (optarg != NULL)  rw_address = strtol(optarg, NULL, 0);
-      break;
-    case 'w': 
-      if (optarg != NULL)  rw_data = strtol(optarg, NULL, 0);
-      mode = MODE_WRITE;
-      break;
-    case 'd': mode = MODE_DUMPSDB; break;
-    default:
-        fprintf(stderr, "Usage: %s [-a address] [-w data] [-d device]\n", argv[0]);
-        return 0;
-    }
+  int c;
+  while (1) {
+        int this_option_optind = optind ? optind : 1;
+        int option_index = 0;
+        static struct option long_options[] = {
+            {"device",  required_argument, 0,  0 },
+            {"url",     required_argument, 0,  0 }, // -u format component_id+offset
+            {"address", required_argument, 0,  0 }, // -a address
+            {"write",   required_argument, 0,  0 }, // -w wrute data
+            {"tree",    no_argument,       0,  0 }, // -t dump sdb tree
+            {0,         0,                 0,  0 }
+        };
+        c = getopt_long(argc, argv, "d:u:a:w:t", long_options, &option_index);
+        if (c == -1)
+            break;
+        switch (c) {
+          case 'd':
+            if (devicename != NULL) free(devicename);
+            devicename = strdup(optarg);
+            break;  
+          case 'u':
+            token = strtok_r(optarg, "+", &save_ptr);
+            rw_component_id = strdup(token);
+            token = strtok_r(NULL, "+", &save_ptr);
+            if (token != NULL) rw_offset = strtol(token, NULL, 0);
+            break;
+          case 'a': 
+            if (optarg != NULL)  rw_address = strtol(optarg, NULL, 0);
+            break;
+          case 'w': 
+            if (optarg != NULL)  rw_data = strtol(optarg, NULL, 0);
+            mode = MODE_WRITE;
+            break;
+          case 't': mode = MODE_DUMPSDB; break;
+          default: 
+            print_help(argv[0]);
+            exit(EXIT_FAILURE);
+        }
+   }
+
+
+  if(devicename == NULL) {
+    devicename = strdup("/dev/ttyUSB0");
   }
 
-  struct pghal_bus * bus = NULL;
-  bus = uart_open_bus("/dev/ttyUSB0");
-
+  if (strncmp("/dev/ttyUSB", devicename, strlen("/dev/ttyUSB")) == 0) {
+    bus = uart_open_bus(devicename);
+  } else if (strncmp("/dev/xdma/", devicename, strlen("/dev/xdma/")) == 0) {
+    bus = xdma_open_bus(devicename);
+  } else {
+    fprintf(stderr, "Unknown driver for device \"%s\"\n", devicename);
+            exit(EXIT_FAILURE);
+  }
 
   struct wb_sdb_rom * sdb_rom = wb_sdb_rom_create_direct(bus, 0x0, 0x0); 
   if (rw_component_id != NULL) {
