@@ -148,7 +148,7 @@ int main( int argc, char** argv){
   } else if (mode == MODE_WRITE) {
     pghal_bus_write(bus, &node_address->address, 1, &rw_data);
   } else if (mode == MODE_DUMPSDB) {
-    wb_sdb_rom_dump(sdb_rom); 
+    wb_sdb_rom_dump(sdb_rom, 1); 
   }
 
 

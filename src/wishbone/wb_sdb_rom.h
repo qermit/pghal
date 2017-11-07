@@ -35,7 +35,7 @@ int wb_sdb_get_name_by_id(struct wb_sdb_rom * sdb_rom, uint16_t id, char * name)
 int wb_sdb_get_addr_by_id(struct wb_sdb_rom * sdb_rom, uint16_t, uint32_t * sdb_address);
 int wb_sdb_get_name_by_ids(struct wb_sdb_rom * sdb_rom, char * id_string, char * name);
 int wb_sdb_get_addr_by_ids(struct wb_sdb_rom * sdb_rom, char * id_string, uint32_t * sdb_address);
-void wb_sdb_rom_dump(struct wb_sdb_rom * sdb_rom);
+void wb_sdb_rom_dump(struct wb_sdb_rom * sdb_rom, int level);
 
 
 #ifdef __cplusplus

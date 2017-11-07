@@ -238,31 +238,27 @@ int wb_sdb_get_name_by_ids(struct wb_sdb_rom * sdb_rom, char * id_string, char *
 
 }
 
-void wb_sdb_rom_dump(struct wb_sdb_rom * sdb_rom)
+void wb_sdb_rom_dump(struct wb_sdb_rom * sdb_rom, int level)
 {
   struct wb_sdb_entry * current_entry = NULL;
   struct wb_sdb_rom * current_rom = NULL;
-  printf("Current sdb base address: %08X\n", sdb_rom->bus_address);
   list_for_each_entry(current_entry, &sdb_rom->entry_list, list) {
-//     printf("Current: %d -> %02X\n", current_entry->entry_id, current_entry->data.record_type);
      if (current_entry->data.record_type == sdb_type_bridge){
        struct sdb_bridge * tmp_bridge = (struct sdb_bridge *) &current_entry->data;
-       printf("Bridge %d -> crawling one level down 0x%08lX -> 0x%08lX\n", current_entry->entry_id, tmp_bridge->sdb_child, tmp_bridge->sdb_component.addr_first + sdb_rom->bus_address);
-//       struct wb_sdb_rom * tmp_down = wb_sdb_rom_create_direct(bus, tmp_bridge->sdb_component.addr_first, tmp_bridge->sdb_child);
-//       tmp_down->entry_id = current_entry->entry_id;
-//       tmp_down->bus_address = tmp_bridge->sdb_component.addr_first + bus_address;
-//       tmp_down->parent = &sdb_rom;
-//       list_add_tail(&tmp_down->list, &sdb_rom->rom_list);
+       printf("Bridge %*s%d@%08X: |%.19s|\n", level, "",current_entry->entry_id, tmp_bridge->sdb_component.addr_first, tmp_bridge->sdb_component.product.name);
        list_for_each_entry(current_rom, &sdb_rom->rom_list, list) {
          if (current_rom->entry_id == current_entry->entry_id) {
-           wb_sdb_rom_dump(current_rom);
+           wb_sdb_rom_dump(current_rom, level + 1);
            break;
          }
        }
      } else if (current_entry->data.record_type == sdb_type_device) {
        struct sdb_device * tmp_device = (struct sdb_device *) &current_entry->data;
-       printf("Device %d@%08X: |%.19s|\n", current_entry->entry_id, tmp_device->sdb_component.addr_first + sdb_rom->bus_address, tmp_device->sdb_component.product.name); 
+       printf("Device %*s%d@%08X: |%.19s|\n", level, "",current_entry->entry_id, tmp_device->sdb_component.addr_first + sdb_rom->bus_address, tmp_device->sdb_component.product.name); 
       
+     } else if (current_entry->data.record_type == sdb_type_interconnect) {
+       struct sdb_interconnect * tmp_interconnect = (struct sdb_interconnect*) &current_entry->data;
+       printf("Inter  %*s%d@%08X: |%.19s|\n", level, "", current_entry->entry_id, tmp_interconnect->sdb_component.addr_first + sdb_rom->bus_address, tmp_interconnect->sdb_component.product.name);
      }
   }
 }
