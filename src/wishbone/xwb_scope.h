@@ -37,6 +37,11 @@ void xwb_scope_single_reset(struct xwb_scope * scope);
 
 uint32_t xwb_scope_get_csr(struct xwb_scope * scope);
 
+uint32_t xwb_scope_get_current(struct xwb_scope * scope);
+uint32_t xwb_scope_get_start(struct xwb_scope * scope);
+uint32_t xwb_scope_get_end(struct xwb_scope * scope);
+
+
 void xwb_scope_set_address_range(struct xwb_scope * scope, uint32_t start, uint32_t size);
 void xwb_scope_registers_download(struct xwb_scope * scope);
 

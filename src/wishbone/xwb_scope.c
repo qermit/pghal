@@ -45,6 +45,35 @@ uint32_t xwb_scope_get_csr(struct xwb_scope * scope){
   return data_r[0];
 }
 
+uint32_t xwb_scope_get_current(struct xwb_scope * scope)
+{
+  uint32_t data_r[1];
+  struct sdb_node_address reg_csr0;
+  memcpy(&reg_csr0, &scope->sdb.address, sizeof(struct sdb_node_address));
+  reg_csr0.sdb_address += REG_ADDR_PTR;
+  pghal_bus_read(scope->sdb.bus, &reg_csr0.address, 1*sizeof(uint32_t), data_r);
+  return data_r[0];
+}
+
+uint32_t xwb_scope_get_start(struct xwb_scope * scope)
+{
+  uint32_t data_r[1];
+  struct sdb_node_address reg_csr0;
+  memcpy(&reg_csr0, &scope->sdb.address, sizeof(struct sdb_node_address));
+  reg_csr0.sdb_address += REG_ADDR_START;
+  pghal_bus_read(scope->sdb.bus, &reg_csr0.address, 1*sizeof(uint32_t), data_r);
+  return data_r[0];
+}
+
+uint32_t xwb_scope_get_end(struct xwb_scope * scope)
+{
+  uint32_t data_r[1];
+  struct sdb_node_address reg_csr0;
+  memcpy(&reg_csr0, &scope->sdb.address, sizeof(struct sdb_node_address));
+  reg_csr0.sdb_address += REG_ADDR_END;
+  pghal_bus_read(scope->sdb.bus, &reg_csr0.address, 1*sizeof(uint32_t), data_r);
+  return data_r[0];
+}
 
 void   xwb_scope_registers_download(struct xwb_scope * scope)
 {
