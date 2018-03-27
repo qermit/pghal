@@ -59,7 +59,7 @@ void init_procedure(struct pghal_bus * bus, char * card_name) {
   struct wb_gpio_raw * fmc1_dio_gpio = NULL;
   struct wb_fmc_csr * fmc1_csr  = NULL;
  
-  wb_sdb_rom_dump(sdb_rom); 
+  wb_sdb_rom_dump(sdb_rom, 1); 
 
   len = wb_sdb_get_addr_by_ids(sdb_rom, "1", &tmp_addr);
   if (len >= 0)

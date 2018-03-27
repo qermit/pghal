@@ -1,3 +1,8 @@
 fmc2_config
 pghal_wr
 xdma_enum_cards
+watch_xscope
+dma_from_device
+test_bpm_bitfield
+sim_config
+raw_config

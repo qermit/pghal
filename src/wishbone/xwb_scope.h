@@ -4,11 +4,30 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-// TODO: GPIO abstraction layer required
+
+//nal s_csr0 :std_logic_vector(31 downto 0);
+//  31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0
+//                                                         |  |  |  |  |  |  |  |  |  |  |  |  |  +- reset, self clear (W)
+//                                                         |  |  |  |  |  |  |  |  |  |  |  |  +---- 
+//                                                         |  |  |  |  |  |  |  |  |  |  |  +------- enable for c_ptr_max; (W)
+//                                                         |  |  |  |  |  |  |  |  |  |  +---------- circular buffer
+//                                                         |  |  |  |  |  |  |  |  |  +------------- state_idle (R)
+//                                                         |  |  |  |  |  |  |  |  +---------------- state_armed (R) / W - arm machine
+//                                                         |  |  |  |  |  |  |  +------------------- state_triggered (R) / W - force trigger
+//                                                         |  |  |  |  |  |  +---------------------- 
+//                                                         |  |  |  |  |  +------------------------- 
+//                                                         |  |  |  |  +---------------------------- 
+//                                                         |  |  |  +------------------------------- 
+//                                                         |  |  +---------------------------------- 
+//                                                         |  +-------------------------------------
+//                                                         +---------------------------------------- 
+  
+
 
 
 #define XWB_SCOPE_CSR0_RESET           0x01
 #define XWB_SCOPE_CSR0_SINGLE_SHOT     0x04
+#define XWB_SCOPE_CSR0_CIRCULAR        0x08
 
 #define XWB_SCOPE_CSR0_STATE_IDLE      0x10
 #define XWB_SCOPE_CSR0_STATE_ARMED     0x20

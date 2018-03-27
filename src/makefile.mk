@@ -6,6 +6,7 @@ DEPS_WB += ${INC_DIR}wishbone/wb_spi.h
 DEPS_WB += ${INC_DIR}wishbone/xwb_scope.h
 DEPS_WB += ${INC_DIR}wishbone/wb_xilinx_dna.h
 DEPS_WB += ${INC_DIR}wishbone/wb_sdb_rom.h
+DEPS_WB += ${INC_DIR}wishbone/wb_xvc_jtag.h
 
 DEPS_CHIP += ${INC_DIR}chip/chip_si57x.h
 DEPS_CHIP += ${INC_DIR}chip/chip_ad9510.h
@@ -28,6 +29,7 @@ OBJ_WB += ${INC_DIR}wishbone/wb_spi.o
 OBJ_WB += ${INC_DIR}wishbone/wb_xilinx_dna.o
 OBJ_WB += ${INC_DIR}wishbone/xwb_scope.o
 OBJ_WB += ${INC_DIR}wishbone/wb_sdb_rom.o
+OBJ_WB += ${INC_DIR}wishbone/wb_xvc_jtag.o
 
 OBJ_CHIP += ${INC_DIR}chip/chip_ad9510.o
 OBJ_CHIP += ${INC_DIR}chip/chip_si57x.o
