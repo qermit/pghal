@@ -53,10 +53,16 @@
 static struct pghal_list node_drivers_head = LIST_HEAD_INIT(node_drivers_head);
 static struct pghal_list bus_drivers_head = LIST_HEAD_INIT(bus_drivers_head);
 
-
+#define HELP_STR "Usage %s:\n" \
+                 "  -d --device=DEVICE     device node /dev/...\n" \
+                 "  -u --url=ID+OFFSET     format component_id+offset\n" \
+                 "  -a --address=ADDRESS   address\n" \
+                 "  -w --write=DATA        data to write\n" \
+                 "  -t --tree              dump sdb tree\n"
+                           
 void print_help(char * argv0)
 {
-  fprintf(stderr, "Usage: %s [-t nsecs] [-n] name\n", argv0); 
+  fprintf(stderr, HELP_STR, argv0); 
 }
 
 int main( int argc, char** argv){

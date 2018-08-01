@@ -19,7 +19,9 @@ DEPS_H += ${INC_DIR}pghal_i2c.h
 DEPS_H += ${INC_DIR}pghal_spi.h
 DEPS_H += ${INC_DIR}sdb_bus.h
 DEPS_H += ${INC_DIR}pghal.h list.h sdb_xdma.h
+
 DEPS_H += ${INC_DIR}fmc/fmc_adc250m.h
+DEPS_H += ${INC_DIR}fmc/fmc_dio32ttla.h
 
 
 OBJ_WB += ${INC_DIR}wishbone/wb_fmc_csr.o
@@ -43,4 +45,5 @@ OBJ += ${INC_DIR}pghal_i2c.o
 OBJ += ${INC_DIR}sdb_uart.o
 
 OBJ += ${INC_DIR}fmc/fmc_adc250m.o
+OBJ += ${INC_DIR}fmc/fmc_dio32ttla.o
 
