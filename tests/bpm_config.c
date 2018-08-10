@@ -43,6 +43,7 @@
 
 #include "fmc/fmc_adc250m.h"
 #include "wishbone/xwb_scope.h"
+#include "wishbone/wb_bpm_params.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -277,13 +278,21 @@ int main( int argc, char** argv){
   if (do_reconfig == 1) {
    init_adc(fmc_card[0], fnew);
    init_adc(fmc_card[1], fnew);
+   uint32_t OFFSET_PARAM;
+   wb_sdb_get_addr_by_id(sdb_rom, 6, &OFFSET_PARAM);
+   struct wb_bpm_params * bpm_params = wb_bpm_params_create_direct(bus, OFFSET_PARAM);
+   wb_bpm_params_set_calib(bpm_params, 1, 1.0 , 0); 
+   wb_bpm_params_set_calib(bpm_params, 7, 1.0 , 0);
+   double gain, offset;
+   wb_bpm_params_get_calib(bpm_params, 7, &gain , &offset);
+   printf("gain %lf, offset: %lf\n", gain, offset); 
   }
   {
     struct xwb_scope * scope_raw = NULL;
     struct xwb_scope * scope_pos = NULL;
     int i;
-    wb_sdb_get_addr_by_id(sdb_rom, 6, &OFFSET_SCOPE[0]);
-    wb_sdb_get_addr_by_id(sdb_rom, 8, &OFFSET_SCOPE[1]);
+    wb_sdb_get_addr_by_id(sdb_rom, 7, &OFFSET_SCOPE[0]);
+    wb_sdb_get_addr_by_id(sdb_rom, 9, &OFFSET_SCOPE[1]);
     for (i = 0; i<2; i++){ printf("SCOPE %d: %08X\n", i, OFFSET_SCOPE[i]); }
 
     scope_raw = xwb_scope_create_direct(bus, OFFSET_SCOPE[0]);

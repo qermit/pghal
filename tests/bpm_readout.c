@@ -19,7 +19,7 @@
 #include "pghal_inc.h"
 
 #include "sdb_bus.h"
-#include "wishbone/xwb_scope.h"
+#include "wishbone/bpm_struct.h"
 
 #include <stdio.h>
 #include <stdlib.h>
