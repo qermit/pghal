@@ -22,7 +22,7 @@ extern "C" {
 
 struct wb_sdb_rom {
   struct sdb_module sdb;
-
+  int child_count; 
   struct wb_sdb_rom * parent; // parent sdb_rom
   struct pghal_list list; // list of all sdb_roms at the same level
   uint32_t entry_id;      // id that matches bridge entry id
@@ -44,6 +44,8 @@ struct wb_sdb_rom * wb_sdb_discovered(struct wb_sdb_rom * sdb_rom);
 
 struct wb_sdb_rom * wb_sdb_get_sdb_rom_by_id(struct wb_sdb_rom * sdb_rom, uint16_t id);
 struct wb_sdb_rom * wb_sdb_get_sdb_rom_by_ids(struct wb_sdb_rom * sdb_rom, char * id_string);
+
+int wb_sdb_get_entries_count(struct wb_sdb_rom * sdb_rom);
 
 enum sdb_record_type wb_sdb_get_type_by_id(struct wb_sdb_rom * sdb_rom, uint16_t id); // return id or empty
 enum sdb_record_type wb_sdb_get_type_by_ids(struct wb_sdb_rom * sdb_rom, char * id_string); // return id or empty

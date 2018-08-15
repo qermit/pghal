@@ -132,10 +132,10 @@ struct wb_sdb_entry * wb_sdb_get_by_ids(struct wb_sdb_rom * sdb_rom, char * id_s
   while(token != NULL && current_level_sdb_rom != NULL) {
     uint32_t entry_id = strtoul(token, NULL, 0); 
     if ( save_ptr[0] != 0) {
-      printf("Trying to get SDB rom for entry_id: %d\n", entry_id);
+      //printf("Trying to get SDB rom for entry_id: %d\n", entry_id);
       current_level_sdb_rom = wb_sdb_get_sdb_rom_by_id(current_level_sdb_rom, entry_id); 
     } else {
-      printf("Trying to get SDB entry for entry_id: %d\n", entry_id);
+      //printf("Trying to get SDB entry for entry_id: %d\n", entry_id);
       ret_entry = wb_sdb_get_by_id(current_level_sdb_rom, entry_id);
     }
     token = strtok_r(NULL, ".", &save_ptr);
@@ -269,6 +269,7 @@ void wb_sdb_rom_dump(struct wb_sdb_rom * sdb_rom, int level)
 {
   struct wb_sdb_entry * current_entry = NULL;
   struct wb_sdb_rom * current_rom = NULL;
+  printf("records: %d\n", wb_sdb_get_entries_count(sdb_rom));
   list_for_each_entry(current_entry, &sdb_rom->entry_list, list) {
      if (current_entry->data.record_type == sdb_type_bridge){
        struct sdb_bridge * tmp_bridge = (struct sdb_bridge *) &current_entry->data;
@@ -291,9 +292,14 @@ void wb_sdb_rom_dump(struct wb_sdb_rom * sdb_rom, int level)
 }
 
 
+int wb_sdb_get_entries_count(struct wb_sdb_rom * sdb_rom) {
+  return sdb_rom->child_count;
+}
+
+
 void wb_sdb_rom_discovery(struct pghal_bus * bus, struct wb_sdb_rom * sdb_rom, uint32_t bus_address)
 {
-  printf("wb_sdb_rom_discovery: 0x%08X\n", bus_address);
+  //printf("wb_sdb_rom_discovery: 0x%08X\n", bus_address);
   struct sdb_empty tmp_entry;
   uint16_t records_count = 1;
   struct sdb_interconnect * tmp_inter = NULL;
@@ -317,6 +323,7 @@ void wb_sdb_rom_discovery(struct pghal_bus * bus, struct wb_sdb_rom * sdb_rom, u
                tmp_inter = decode_sdb_interconnect(&tmp_entry);
                if (tmp_inter == NULL) continue;
                records_count = tmp_inter->sdb_records;
+               sdb_rom->child_count = records_count; 
                break;
        default: continue;
     }
@@ -374,7 +381,7 @@ struct wb_sdb_rom * wb_sdb_rom_create_child(struct wb_sdb_rom * parent, struct w
   INIT_LIST_HEAD(&sdb_rom->rom_list);
 
   sdb_rom->entry_id = sdb_entry->entry_id;
-  printf("creating SDB level: %d, entry_id: %d\n", sdb_rom->level, sdb_rom->entry_id);
+  //printf("creating SDB level: %d, entry_id: %d\n", sdb_rom->level, sdb_rom->entry_id);
  
   // maybe sdb_rom->sdb.address.sdb_address + parent->bus_address;
   wb_sdb_rom_discovery(sdb_rom->sdb.bus, sdb_rom, sdb_rom->sdb.address.sdb_address);
@@ -393,11 +400,11 @@ struct wb_sdb_rom * wb_sdb_rom_create_direct(struct pghal_bus * bus,  uint32_t b
   INIT_LIST_HEAD(&sdb_rom->entry_list);
   INIT_LIST_HEAD(&sdb_rom->rom_list);
   sdb_rom->bus_address = bus_address;
-
+  sdb_rom->child_count = 1;
   sdb_rom->parent = NULL;
   sdb_rom->level = 0;
 
-  printf("creating top SDB\n");
+  //printf("creating top SDB\n");
   wb_sdb_rom_discovery(bus, sdb_rom, bus_address);
 
   return sdb_rom;
