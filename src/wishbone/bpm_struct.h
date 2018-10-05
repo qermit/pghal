@@ -16,9 +16,11 @@ struct bpm_position {
 
 #define BPM_DEFAULT_RADIUS 50
 #define BPM_TO_MM(X, RADUIS) ((((double)X) * ((double) BPM_DEFAULT_RADIUS)) / (1 << 15))
+#define BPM_GET_AVG(X) ((X >> 16) & 0x3FFF )
 #define BPM_GET_COUNTER(X) (X & 0x3FF)
 #define BPM_GET_INTENSITY(X) (X & 0x3FFFFFFF)
 
+#define BPM_POSITION_GET_AVG(X) (BPM_GET_AVG(X.flags_cycle_counter))
 #define BPM_POSITION_GET_COUNTER(X) (BPM_GET_COUNTER(X.flags_cycle_counter))
 #define BPM_POSITION_GET_INTENSITY_X(X) (BPM_GET_INTENSITY(X.intensity_flagsX))
 #define BPM_POSITION_GET_INTENSITY_Y(X) (BPM_GET_INTENSITY(X.intensity_flagsY))

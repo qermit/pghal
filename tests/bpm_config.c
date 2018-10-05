@@ -203,6 +203,7 @@ int main( int argc, char** argv){
   int c;
   int digit_optind = 0;
   int do_reconfig = 0;
+  int do_trigger_setup = 0;
   while (1) {
         int this_option_optind = optind ? optind : 1;
         int option_index = 0;
@@ -210,9 +211,11 @@ int main( int argc, char** argv){
             {"device",  required_argument, 0,  0 },
             {"fmc_id",  required_argument, 0,  0 },
             {"freq",    required_argument, 0,  0 },
+            {"reonfig", no_argument,       0,  0 },
+            {"trigger", no_argument,       0,  0 }, 
             {0,         0,                 0,  0 }
         };
-        c = getopt_long(argc, argv, "d:i:f:r", long_options, &option_index);
+        c = getopt_long(argc, argv, "d:i:f:rt", long_options, &option_index);
         if (c == -1)
             break;
         switch (c) {
@@ -222,6 +225,10 @@ int main( int argc, char** argv){
             break; 
           case 'r':
             do_reconfig = 1; 
+            break;
+          case 't':
+            do_trigger_setup = 1;
+            break; 
           case 'i':
             if (optarg != NULL)  fmc_id = strtol(optarg, NULL, 0); 
             break;
@@ -255,7 +262,7 @@ int main( int argc, char** argv){
   // @todo: automagic fmc search
   //
   uint32_t OFFSET_FMC[2] = {0, 0};
-  uint32_t OFFSET_SCOPE[2] = {0, 0};
+  uint32_t OFFSET_SCOPE[3] = {0, 0, 0};
   struct fmc_adc250m * fmc_card[2] = {NULL, NULL};
   uint16_t fmc_component_id = 0;
   if (1) {
@@ -275,36 +282,65 @@ int main( int argc, char** argv){
       fmc_component_id++;
     }
   }
+
+  uint32_t OFFSET_PARAM;
+  wb_sdb_get_addr_by_id(sdb_rom, 6, &OFFSET_PARAM);
+  struct wb_bpm_params * bpm_params = wb_bpm_params_create_direct(bus, OFFSET_PARAM);
+
   if (do_reconfig == 1) {
    init_adc(fmc_card[0], fnew);
    init_adc(fmc_card[1], fnew);
-   uint32_t OFFSET_PARAM;
-   wb_sdb_get_addr_by_id(sdb_rom, 6, &OFFSET_PARAM);
-   struct wb_bpm_params * bpm_params = wb_bpm_params_create_direct(bus, OFFSET_PARAM);
    wb_bpm_params_set_calib(bpm_params, 1, 1.0 , 0); 
    wb_bpm_params_set_calib(bpm_params, 7, 1.0 , 0);
    double gain, offset;
    wb_bpm_params_get_calib(bpm_params, 7, &gain , &offset);
    printf("gain %lf, offset: %lf\n", gain, offset); 
   }
-  {
+  int avg0 = 10;
+  int avg1 = 12;
+  int trig_id = 2;
+  int rf_id   = 0;
+  wb_bpm_params_set_avg(bpm_params, 0, avg0);
+  wb_bpm_params_set_avg(bpm_params, 1, avg1);
+  wb_bpm_params_set_trig(bpm_params, trig_id, rf_id);
+
+  avg0 = -1;
+  avg1 = -1;
+  trig_id = -1;
+  rf_id   = -1;
+  wb_bpm_params_get_avg(bpm_params, 0, &avg0);
+  wb_bpm_params_get_avg(bpm_params, 1, &avg1);
+
+  wb_bpm_params_get_trig(bpm_params, &trig_id, &rf_id);
+  printf("Current AVG: %d, %d\n", avg0, avg1);
+  printf("Trigger: %d\n", trig_id);
+  printf("RF: %d\n", rf_id);
+
+  if (do_trigger_setup == 1) {
     struct xwb_scope * scope_raw = NULL;
     struct xwb_scope * scope_pos = NULL;
+    struct xwb_scope * scope_avg = NULL;
     int i;
     wb_sdb_get_addr_by_id(sdb_rom, 7, &OFFSET_SCOPE[0]);
     wb_sdb_get_addr_by_id(sdb_rom, 9, &OFFSET_SCOPE[1]);
-    for (i = 0; i<2; i++){ printf("SCOPE %d: %08X\n", i, OFFSET_SCOPE[i]); }
+    wb_sdb_get_addr_by_id(sdb_rom, 11, &OFFSET_SCOPE[2]);
+    for (i = 0; i < (sizeof(OFFSET_SCOPE) / sizeof(uint32_t)); i++){ printf("SCOPE %d: %08X\n", i, OFFSET_SCOPE[i]); }
 
     scope_raw = xwb_scope_create_direct(bus, OFFSET_SCOPE[0]);
     scope_pos = xwb_scope_create_direct(bus, OFFSET_SCOPE[1]);
+    scope_avg = xwb_scope_create_direct(bus, OFFSET_SCOPE[2]);
     xwb_scope_single_reset(scope_raw);
     xwb_scope_single_reset(scope_pos);
+    xwb_scope_single_reset(scope_avg);
 
 
-    xwb_scope_set_address_range(scope_raw, 0, 0x10000000);
-    xwb_scope_set_address_range(scope_pos, 0x10000000, 0x100000);
-    xwb_scope_single_shot(scope_raw);
+    //xwb_scope_set_address_range(scope_raw, 0, 0x10000000);
+    //xwb_scope_set_address_range(scope_raw, 0, 0x10000000);
+    xwb_scope_set_address_range(scope_pos, 0x11000000, 0x100000);
+    xwb_scope_set_address_range(scope_avg, 0x10200000, 0x100000);
+    //xwb_scope_single_shot(scope_raw);
     xwb_scope_single_shot(scope_pos);
+    xwb_scope_single_shot(scope_avg);
 
   }
 

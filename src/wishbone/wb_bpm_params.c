@@ -3,8 +3,8 @@
 #include "sdb_bus.h"
 #include "wb_bpm_params.h"
 
-#define WB_FMC_CSR_STATUS 0x00
-#define WB_FMC_CSR_CTL1   0x04
+#define WB_BPM_PARAM_REG0 0x00
+#define WB_BPM_PARAM_REG1 0x04
 
 #define WB_BPM_PARAM_GAIN0 0x08
 
@@ -68,4 +68,60 @@ void wb_bpm_params_get_calib(struct wb_bpm_params *csr, int channel, double * ga
   *offset = ((double) offset_fix) / 32768.0; 
 
 }
-//void wb_fmc_csr_enable(struct wb_fmc_csr *csr, uint8_t flag)
+
+void wb_bpm_params_set_avg(struct wb_bpm_params *csr, int id, int avg) {
+  if (id < 0 || id > 1) return;
+  avg--;
+  if (avg < 0) avg = 0;
+  if (avg > 1023) avg = 1023;
+
+  struct sdb_node_address reg_csr;
+  memcpy(&reg_csr, &csr->sdb.address, sizeof(struct sdb_node_address));
+  reg_csr.sdb_address = csr->sdb.address.sdb_address + WB_BPM_PARAM_REG0 + (id * 0x04);
+  
+  uint32_t data;
+  pghal_bus_read(csr->sdb.bus, &reg_csr.address , sizeof(uint32_t), &data);
+  data = (avg << 16) | (data & 0x0000FFFF);
+  pghal_bus_write(csr->sdb.bus, &reg_csr.address , sizeof(uint32_t), &data);
+
+}
+
+void wb_bpm_params_get_avg(struct wb_bpm_params *csr, int id, int * avg) {
+  *avg = -1;
+  if (id < 0 || id > 1) return;
+
+  struct sdb_node_address reg_csr;
+  memcpy(&reg_csr, &csr->sdb.address, sizeof(struct sdb_node_address));
+  reg_csr.sdb_address = csr->sdb.address.sdb_address + WB_BPM_PARAM_REG0 + (id * 0x04);
+  
+  uint32_t data;
+  pghal_bus_read(csr->sdb.bus, &reg_csr.address , sizeof(uint32_t), &data);
+  *avg = (data >> 16) + 1; 
+}
+
+void wb_bpm_params_set_trig(struct wb_bpm_params *csr, int trig, int rf) {
+  struct sdb_node_address reg_csr;
+  memcpy(&reg_csr, &csr->sdb.address, sizeof(struct sdb_node_address));
+  reg_csr.sdb_address = csr->sdb.address.sdb_address + WB_BPM_PARAM_REG1;
+
+  uint32_t data;
+  pghal_bus_read(csr->sdb.bus, &reg_csr.address , sizeof(uint32_t), &data);
+  data = (data & 0xFFFF0000) | ((rf << 8) & 0x0000FF00) | (trig & 0x000000FF);
+  pghal_bus_write(csr->sdb.bus, &reg_csr.address , sizeof(uint32_t), &data);
+
+}
+
+void wb_bpm_params_get_trig(struct wb_bpm_params *csr, int * trig, int *rf) {
+  *trig = -1;
+  *rf   = -1;
+
+  struct sdb_node_address reg_csr;
+  memcpy(&reg_csr, &csr->sdb.address, sizeof(struct sdb_node_address));
+  reg_csr.sdb_address = csr->sdb.address.sdb_address + WB_BPM_PARAM_REG1;
+  
+  uint32_t data;
+  pghal_bus_read(csr->sdb.bus, &reg_csr.address , sizeof(uint32_t), &data);
+  *trig = data & 0x000000FF;
+  *rf   = (data >> 8) & 0x000000FF;
+
+}

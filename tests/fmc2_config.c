@@ -70,6 +70,122 @@ void print_help(char * argv0)
   fprintf(stderr, "Usage: %s [-t nsecs] [-n] name\n", argv0); 
 }
 
+
+int init_afc(struct fmc_adc250m * fmc_card, double fnew) {
+
+  // set trigger as input
+  wb_gpio_raw_set_port_direction(fmc_card->gpio, 0x2000 | 0x20);
+  wb_gpio_raw_set_port_value(fmc_card->gpio, 0x2000 | 0x20, 0x2000 | 0x20); 
+
+  wb_gpio_raw_set_port_termination(fmc_card->gpio, 0x8); // <- trigger input termination enable
+  wb_gpio_raw_set_port_altf(fmc_card->gpio, 0x0);        // <- reset all alternative functions
+  wb_gpio_raw_set_port_value(fmc_card->gpio, 0x20, 0x20 | 0x2000); 
+
+//  wb_gpio_raw_set_port_value(fmc_card->gpio, 0x0400, 0x0400);
+  wb_gpio_raw_set_port_value(fmc_card->gpio, 0x0000, 0x0400);
+//  usleep(1000);
+//  */
+  // debug spi and i2c over FMC1 dio;
+  // it's bitstream specific
+//  wb_gpio_raw_set_port_altf(fmc1_gpio, 0b00000110); 
+//  wb_gpio_raw_set_port_direction(fmc1_gpio, 0b00000110); 
+
+
+
+  if (1) { 
+  if (0) {
+    chip_si57x_decode_part_number(fmc_card->chip_si57x, "TESTTESTTEST01");
+  } else {
+    chip_si57x_decode_part_number(fmc_card->chip_si57x, "571AJC000337DG");
+  }  
+
+  chip_si57x_reload_initial(fmc_card->chip_si57x);
+  //return 0;
+  chip_si57x_find_valid_combo(fmc_card->chip_si57x, fnew, SI57X_METHOD_HARD);
+  chip_si57x_send_regs(fmc_card->chip_si57x, &fmc_card->chip_si57x->reg_new, SI57X_METHOD_HARD);
+  chip_si57x_registers_download(fmc_card->chip_si57x);
+
+//  return 0;
+  // enbable VCXO and PLL
+    wb_gpio_raw_set_port_value(fmc_card->gpio, 0x00, 0x20); 
+  //  usleep(1);
+    wb_gpio_raw_set_port_value(fmc_card->gpio, 0x2000 | 0x20, 0x2000 | 0x20); 
+  }
+  //return 0;
+
+  if (1) {
+    printf("configure AD9510\n");
+  // configure AD9510
+
+    chip_ad9510_set_address(fmc_card->chip_ad9510, 0);
+    chip_ad9510_soft_reset(fmc_card->chip_ad9510);
+
+
+//  return 0;
+    chip_ad9510_registers_download(fmc_card->chip_ad9510, 0, 100);
+    chip_ad9510_config1(fmc_card->chip_ad9510);
+    chip_ad9510_registers_download(fmc_card->chip_ad9510, 0, 100); // donload to assert;
+    chip_ad9510_registers_commit(fmc_card->chip_ad9510);
+  
+  }
+
+  //configure 4x ADC
+  if (1) {
+  // assert and deassert ADC resets
+  wb_gpio_raw_set_port_value(fmc_card->gpio, 0x0000, 0x0400);
+  usleep(10000);
+  wb_gpio_raw_set_port_value(fmc_card->gpio, 0x0400, 0x0400);
+  usleep(10000);
+  
+
+  int isla_chips = 4;
+  // reset first, wait for all in separate loop
+  { int i;
+    
+    for (i = 0 ; i<isla_chips; i++){
+      chip_isla216p_set_address(fmc_card->chip_isla216p[i], i);
+      chip_isla216p_soft_reset(fmc_card->chip_isla216p[i]);
+      fmc_card->chip_isla216p[i]->reg_current.cal[0] = 0;
+
+    }
+    // get standard cal time
+    usleep(chip_isla216p_get_cal_time_ms(fnew) * 1000);
+    for (i = 0 ; i<isla_chips; i++){
+      int counter = 0;
+      //fmc_card_isla216p[i]->reg_current.cal[0] = 
+      chip_isla216p_registers_download(fmc_card->chip_isla216p[i], CHIP_ISLA216P_CAL_ID);
+      while( fmc_card->chip_isla216p[i]->reg_current.cal[0] != 0x91) {
+        printf("Chip[%d] wait for cal bit: %d -> %02X\n", i, counter++,fmc_card->chip_isla216p[i]->reg_current.cal[0]);
+        usleep(1000);
+        chip_isla216p_registers_download(fmc_card->chip_isla216p[i], CHIP_ISLA216P_CAL_ID);
+      }
+      printf("Chip[%d] done after: %d loops\n", i, counter);
+      chip_isla216p_registers_download(fmc_card->chip_isla216p[i], CHIP_ISLA216P_ALL_ID);
+      printf("Chip[%d] Mode: %02X\n", i, fmc_card->chip_isla216p[i]->reg_current.adc[5]);
+      fmc_card->chip_isla216p[i]->reg_current.adc[5] = 0x01;
+
+      fmc_card->chip_isla216p[i]->reg_current.out[2] = 0x01;
+      fmc_card->chip_isla216p[i]->reg_current.out[3] = 0x24;
+      if (fnew < 90) {
+        fmc_card->chip_isla216p[i]->reg_current.out[4] |= 0x40;
+      } else {
+        fmc_card->chip_isla216p[i]->reg_current.out[4] &= 0xBF;
+      }
+      chip_isla216p_registers_upload(fmc_card->chip_isla216p[i], CHIP_ISLA216P_OUT_ID | CHIP_ISLA216P_ADC_ID, NULL );
+      chip_isla216p_test_path(fmc_card->chip_isla216p[i], ISLA216P_TEST_PATTERN_OFF, 0x0000, 0x0000, 0x0000, 0x0000);
+      
+      
+    }
+    
+  }
+  
+  
+   }
+
+ return 0;
+   
+}
+
 int main( int argc, char** argv){
   
   xdma_bus_driver_register(&bus_drivers_head);
@@ -128,139 +244,31 @@ int main( int argc, char** argv){
     fprintf(stderr, "Unknown driver for device \"%s\"\n", devicename);
             exit(EXIT_FAILURE);
   }
-
+  int fmc_components[2] = {0, 0};
   struct wb_sdb_rom * sdb_rom = wb_sdb_rom_create_direct(bus, 0x0, 0x0); 
   // @todo: automagic fmc search
   //
-  uint32_t OFFSET_FMC = 0;
+  uint32_t OFFSET_FMC[2] = {0, 0};
+  struct fmc_adc250m * fmc_card[2] = {NULL, NULL};
   uint16_t fmc_component_id = 0;
-  {
+  if (1) {
     int i = 10;
     char s_name[10];
     char tmp_name[32];
     
-    sprintf(s_name, "fmc%d", fmc_id); 
-    for (i=3; i<7; i++){
+    sprintf(s_name, "fmc", fmc_id); 
+    for (i=3; i<7 && fmc_component_id < 2; i++){
       int len = wb_sdb_get_name_by_id(sdb_rom, i, tmp_name);
       if (len < 0) continue;
       if (strncmp(s_name, tmp_name,strlen(s_name)) != 0) continue;
-      fmc_component_id = i;
-      wb_sdb_get_addr_by_id(sdb_rom, i, &OFFSET_FMC);
+      fmc_components[fmc_component_id] = i;
+      wb_sdb_get_addr_by_id(sdb_rom, i, &OFFSET_FMC[fmc_component_id]);
+      fmc_card[fmc_component_id] = fmc_adc250m_init(bus, OFFSET_FMC[fmc_component_id], OFFSET_FMC[fmc_component_id]);
+      printf("Device: %s, fmc_id: %d, offset: %08X -> %s\n", devicename, fmc_component_id, OFFSET_FMC[fmc_component_id], tmp_name);
+      fmc_component_id++;
     }
   }
-  if (fmc_component_id == 0) exit(1);
-  printf("Device: %s, fmc_id: %d, offset: %08X\n", devicename, fmc_id, OFFSET_FMC);
-  struct fmc_adc250m * fmc2 = fmc_adc250m_init(bus, OFFSET_FMC, OFFSET_FMC);
+  init_afc(fmc_card[0], fnew);
+  init_afc(fmc_card[1], fnew);
 
-  // set trigger as input
-  wb_gpio_raw_set_port_direction(fmc2->gpio, 0x2000 | 0x20);
-  wb_gpio_raw_set_port_value(fmc2->gpio, 0x2000 | 0x20, 0x2000 | 0x20); 
-
-  wb_gpio_raw_set_port_termination(fmc2->gpio, 0x8); // <- trigger input termination enable
-  wb_gpio_raw_set_port_altf(fmc2->gpio, 0x0);        // <- reset all alternative functions
-  wb_gpio_raw_set_port_value(fmc2->gpio, 0x20, 0x20 | 0x2000); 
-
-//  wb_gpio_raw_set_port_value(fmc2->gpio, 0x0400, 0x0400);
-  wb_gpio_raw_set_port_value(fmc2->gpio, 0x0000, 0x0400);
-//  usleep(1000);
-//  */
-  //return 0; 
-  // debug spi and i2c over FMC1 dio;
-  // it's bitstream specific
-//  wb_gpio_raw_set_port_altf(fmc1_gpio, 0b00000110); 
-//  wb_gpio_raw_set_port_direction(fmc1_gpio, 0b00000110); 
-
-
-
-  if (1) { 
-  if (0) {
-    chip_si57x_decode_part_number(fmc2->chip_si57x, "TESTTESTTEST01");
-  } else {
-    chip_si57x_decode_part_number(fmc2->chip_si57x, "571AJC000337DG");
-  }  
-
-  chip_si57x_reload_initial(fmc2->chip_si57x);
-  //return 0;
-  chip_si57x_find_valid_combo(fmc2->chip_si57x, fnew, SI57X_METHOD_HARD);
-  chip_si57x_send_regs(fmc2->chip_si57x, &fmc2->chip_si57x->reg_new, SI57X_METHOD_HARD);
-  chip_si57x_registers_download(fmc2->chip_si57x);
-
-//  return 0;
-  // enbable VCXO and PLL
-    wb_gpio_raw_set_port_value(fmc2->gpio, 0x00, 0x20); 
-  //  usleep(1);
-    wb_gpio_raw_set_port_value(fmc2->gpio, 0x2000 | 0x20, 0x2000 | 0x20); 
-  }
-  //return 0;
-
-  if (1) {
-    printf("configure AD9510\n");
-  // configure AD9510
-
-    chip_ad9510_set_address(fmc2->chip_ad9510, 0);
-    chip_ad9510_soft_reset(fmc2->chip_ad9510);
-
-
-//  return 0;
-    chip_ad9510_registers_download(fmc2->chip_ad9510, 0, 100);
-    chip_ad9510_config1(fmc2->chip_ad9510);
-    chip_ad9510_registers_download(fmc2->chip_ad9510, 0, 100); // donload to assert;
-    chip_ad9510_registers_commit(fmc2->chip_ad9510);
-  
-  }
-
-  //configure 4x ADC
-  if (1) {
-  // assert and deassert ADC resets
-  wb_gpio_raw_set_port_value(fmc2->gpio, 0x0000, 0x0400);
-  usleep(10000);
-  wb_gpio_raw_set_port_value(fmc2->gpio, 0x0400, 0x0400);
-  usleep(10000);
-  
-
-  int isla_chips = 4;
-  // reset first, wait for all in separate loop
-  { int i;
-    
-    for (i = 0 ; i<isla_chips; i++){
-      chip_isla216p_set_address(fmc2->chip_isla216p[i], i);
-      chip_isla216p_soft_reset(fmc2->chip_isla216p[i]);
-      fmc2->chip_isla216p[i]->reg_current.cal[0] = 0;
-
-    }
-    // get standard cal time
-    usleep(chip_isla216p_get_cal_time_ms(fnew) * 1000);
-    for (i = 0 ; i<isla_chips; i++){
-      int counter = 0;
-      //fmc2_isla216p[i]->reg_current.cal[0] = 
-      chip_isla216p_registers_download(fmc2->chip_isla216p[i], CHIP_ISLA216P_CAL_ID);
-      while( fmc2->chip_isla216p[i]->reg_current.cal[0] != 0x91) {
-        printf("Chip[%d] wait for cal bit: %d -> %02X\n", i, counter++,fmc2->chip_isla216p[i]->reg_current.cal[0]);
-        usleep(1000);
-        chip_isla216p_registers_download(fmc2->chip_isla216p[i], CHIP_ISLA216P_CAL_ID);
-      }
-      printf("Chip[%d] done after: %d loops\n", i, counter);
-      chip_isla216p_registers_download(fmc2->chip_isla216p[i], CHIP_ISLA216P_ALL_ID);
-      printf("Chip[%d] Mode: %02X\n", i, fmc2->chip_isla216p[i]->reg_current.adc[5]);
-      fmc2->chip_isla216p[i]->reg_current.adc[5] = 0x01;
-
-      fmc2->chip_isla216p[i]->reg_current.out[2] = 0x01;
-      fmc2->chip_isla216p[i]->reg_current.out[3] = 0x24;
-      if (fnew < 90) {
-        fmc2->chip_isla216p[i]->reg_current.out[4] |= 0x40;
-      } else {
-        fmc2->chip_isla216p[i]->reg_current.out[4] &= 0xBF;
-      }
-      chip_isla216p_registers_upload(fmc2->chip_isla216p[i], CHIP_ISLA216P_OUT_ID | CHIP_ISLA216P_ADC_ID, NULL );
-      chip_isla216p_test_path(fmc2->chip_isla216p[i], ISLA216P_TEST_PATTERN_OFF, 0x0000, 0x0000, 0x0000, 0x0000);
-      
-      
-    }
-    
-  }
-  
-  
-   }
-
- return 0;
 }

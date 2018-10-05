@@ -33,9 +33,10 @@ void readout_positions(char * filename, int limit) {
    infile = fopen(filename, "r");
    if(infile == NULL) return;
    int i = 0;
-   printf(" id | count |    pos X   | RSS\n");
+   printf(" id | avg | count |    pos X   | RSS\n");
    while(fread(&position, sizeof(struct bpm_position), 1, infile)) {
-      printf("%3d | %5d | %10.6lf | %10d\n", i++, 
+      printf("%3d | %5d | %5d | %10.6lf | %10d\n", i++, 
+               BPM_POSITION_GET_AVG(position),       
               BPM_POSITION_GET_COUNTER(position),
               BPM_TO_MM(position.posX, BPM_DEFAULT_RADIUS),
               BPM_POSITION_GET_INTENSITY_X(position) );
